@@ -45,6 +45,8 @@ namespace HA
         TextInputEditText txtPassword;
         // 配置文件
         string configFile;
+        // 日志行数
+        int logLine = 0;
         // MQTT
         MqttHA mqttHA = null;
 
@@ -246,7 +248,7 @@ namespace HA
                 */
                 log("开始连接MQTT服务。。。");
                 mqttHA = new MqttHA(ip, port, user, password);
-                mqttHA.Connect(ex =>
+                mqttHA.Connect(mqttEvent =>
                 {
                     // 保存配置
                     Dictionary<string, string> dict = new Dictionary<string, string>();
@@ -257,6 +259,74 @@ namespace HA
                     File.WriteAllText(configFile, JsonConvert.SerializeObject(dict));
 
                     log("连接MQTT服务成功");
+                    // 语音识别
+                    string voiceTopic = $"android/{deviceInfo.DeviceId}/voice/start";
+                    string voiceTextTopic = $"android/{deviceInfo.DeviceId}/voice/text";
+                    log($"订阅【语音识别】：{voiceTopic}");
+                    bool isRecord = false;
+                    mqttHA.AddSubscribe(voiceTopic, (payload) =>
+                    {
+                        if (isRecord) return;
+                        isRecord = true;
+                        // 震动一下
+                        Vibrator vibrator = GetSystemService(Context.VibratorService) as Vibrator;
+                        vibrator.Vibrate(500);
+                        Task.Run(() =>
+                        {
+                            try
+                            {
+                                log("开始录音");
+
+                                int bufferSizeInBytes = AudioRecord.GetMinBufferSize(16000, ChannelIn.Mono, Encoding.Pcm16bit);
+                                AudioRecord audioRecord = new AudioRecord(AudioSource.Mic, 16000, ChannelIn.Mono, Encoding.Pcm16bit, bufferSizeInBytes);
+                                audioRecord.StartRecording();
+                                byte[] audiodata = new byte[bufferSizeInBytes];
+                                int readsize = 0;
+                                var audioFile = Java.IO.File.CreateTempFile("record_", ".pcm");
+                                Java.IO.FileOutputStream fos = new Java.IO.FileOutputStream(audioFile.AbsolutePath);
+
+                                System.DateTime stopTime = System.DateTime.Now.AddSeconds(4);
+                                while (System.DateTime.Now.Ticks < stopTime.Ticks)
+                                {
+                                    readsize = audioRecord.Read(audiodata, 0, bufferSizeInBytes);
+                                    if (-3 != readsize)
+                                    {
+                                        try
+                                        {
+                                            fos.Write(audiodata);
+                                        }
+                                        catch (IOException ioEx)
+                                        {
+                                            log(ioEx.Message);
+                                        }
+                                    }
+                                }
+
+                                log("正在识别");
+                                // 使用百度语音识别
+                                var ai = new Baidu.Aip.Speech.Asr("17944158", "HLhr7GE05bY0gAzalObMHtUE", "fzFiBnLYKSMeFddsDGVZBnsyV0O0WACT");
+                                ai.Timeout = 60000;
+                                var data = File.ReadAllBytes(audioFile.AbsolutePath);
+                                // 可选参数
+                                var options = new Dictionary<string, object>();
+                                options.Add("dev_pid", 1537);
+                                ai.Timeout = 120000; // 若语音较长，建议设置更大的超时时间. ms
+                                var result = ai.Recognize(data, "pcm", 16000, options);
+                                if (System.Convert.ToInt32(result["err_no"]) == 0)
+                                {
+                                    string msg = result["result"][0].ToString();
+                                    log(msg);
+                                    mqttHA.Publish(voiceTextTopic, msg);
+                                }
+                            }
+                            catch (System.Exception ex)
+                            {
+                                log($"录音异常： {ex.Message}");
+                            }
+                            log("语音识别结束");
+                            isRecord = false;
+                        });
+                    });
 
                     // 设置屏幕亮度
                     string brightness_topic = $"android/{deviceInfo.DeviceId}/brightness/set";
@@ -339,6 +409,8 @@ namespace HA
                             padAttributes.Add("IP Address", deviceInfo.IP);
                             padAttributes.Add("DeviceId", deviceInfo.DeviceId);
                             padAttributes.Add("Battery", deviceInfo.Battery.ToString());
+                            padAttributes.Add("VoiceTopic", voiceTopic);
+                            padAttributes.Add("VoiceTextTopic", voiceTextTopic);
                             mqttHA.PublishJson(pad["attributes_topic"], padAttributes);
                             // 存储空间
                             Dictionary<string, string> storageAttributes = new Dictionary<string, string>();
@@ -368,6 +440,13 @@ namespace HA
         {
             Runnable runnable = new Runnable(() =>
             {
+                // 100次日志后，清空
+                logLine++;
+                if(logLine > 100)
+                {
+                    txtLog.Text = "";
+                }
+                
                 txtLog.Append($"\n[{System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}]\n{msg}\n");
                 txtLog.MovementMethod = ScrollingMovementMethod.Instance;
                 txtLog.SetSelection(txtLog.Text.Length, txtLog.Text.Length);
