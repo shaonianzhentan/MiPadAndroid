@@ -1,0 +1,40 @@
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <android.support.design.widget.TextInputEditText
+        android:hint="@string/text_ip"
+        android:id="@+id/txtIP"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+    <android.support.design.widget.TextInputEditText
+        android:hint="@string/text_port"
+        android:id="@+id/txtPort"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+    <android.support.design.widget.TextInputEditText
+        android:hint="@string/text_user"
+        android:id="@+id/txtUser"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+<android.support.design.widget.TextInputEditText
+        android:hint="@string/text_password"
+        android:id="@+id/txtPassword"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+<Button
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:text="@string/action_settings"
+    android:id="@+id/button1"/>
+<android.support.design.widget.TextInputEditText
+    android:editable="false"
+    android:id="@+id/txtLog"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"/>
+</LinearLayout>

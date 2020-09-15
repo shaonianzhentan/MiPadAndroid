@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">HA</string>
+    <string name="action_settings">连接MQTT服务</string>
+    <string name="text_user">用户名</string>
+    <string name="text_password">密码</string>
+    <string name="text_ip">MQTT的IP地址</string>
+    <string name="text_port">MQTT的端口</string>
+</resources>
