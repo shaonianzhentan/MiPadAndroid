@@ -38,10 +38,15 @@ namespace HA
             this.password = password;
         }
 
-        async public void  Connect(Action<MQTTnet.Client.Connecting.MqttClientConnectedEventArgs> action)
+        async public void  Connect(Action<MQTTnet.Client.Connecting.MqttClientConnectedEventArgs> action, Action<MQTTnet.Client.Disconnecting.MqttClientDisconnectedEventArgs> disconnectAction)
         {
             // 连接MQTT服务
-            var options = new MqttClientOptionsBuilder().WithTcpServer(host, port);
+            string clientId = Guid.NewGuid().ToString();
+            var options = new MqttClientOptionsBuilder()
+                .WithClientId(clientId)
+                .WithCleanSession(true)
+                .WithWillDelayInterval(5)
+                .WithTcpServer(host, port);
             if (!string.IsNullOrEmpty(user))
             {
                 options.WithCredentials(user, password);
@@ -49,6 +54,7 @@ namespace HA
             var factory = new MqttFactory();
             var mqttClient = factory.CreateMqttClient();
             mqttClient.UseConnectedHandler(action);
+            mqttClient.UseDisconnectedHandler(disconnectAction);
             mqttClient.UseApplicationMessageReceivedHandler(e =>
             {
                 string topic = e.ApplicationMessage.Topic;
@@ -62,7 +68,7 @@ namespace HA
             await mqttClient.ConnectAsync(options.Build(), CancellationToken.None);
         }
 
-        public Dictionary<string, string> ConfigSensor(string id, string name, string icon,string unit)
+        public Dictionary<string, string> ConfigSensor(string id, string name, string icon,string unit = "", string device_class = "")
         {
             string pinyin = "";
             foreach (char item in name)
@@ -86,13 +92,20 @@ namespace HA
             dict["state_topic"] = $"android/{id}/{pinyin}/state";
             dict["attributes_topic"] = $"android/{id}/{pinyin}/attributes";
             string uuid = id.Replace(".", "_");
-            Dictionary<string, object> lightSensorDict = new Dictionary<string, object>();
-            lightSensorDict.Add("name", name);
-            lightSensorDict.Add("icon", icon);
-            lightSensorDict.Add("state_topic", dict["state_topic"]);
-            lightSensorDict.Add("json_attributes_topic", dict["attributes_topic"]);
-            lightSensorDict.Add("unit_of_measurement", unit);
-            this.Config("sensor", $"{pinyin}_{uuid}", lightSensorDict);
+            Dictionary<string, object> sensorDict = new Dictionary<string, object>();
+            sensorDict.Add("name", name);
+            sensorDict.Add("icon", icon);
+            if (!string.IsNullOrEmpty(device_class))
+            {
+                sensorDict.Add("device_class", device_class);
+            }
+            if (!string.IsNullOrEmpty(unit))
+            {
+                sensorDict.Add("unit_of_measurement", unit);
+            }
+            sensorDict.Add("state_topic", dict["state_topic"]);
+            sensorDict.Add("json_attributes_topic", dict["attributes_topic"]);            
+            this.Config("sensor", $"{pinyin}_{uuid}", sensorDict);
             return dict;
         }
 
@@ -106,11 +119,11 @@ namespace HA
             // 设备信息
             dict.Add("device", new
             {
-                identifiers = Android.OS.Build.Time.ToString(),
+                identifiers = Android.OS.Build.Id,
                 manufacturer = Android.OS.Build.Manufacturer,
-                model,
+                model = Android.OS.Build.Model,
                 name = Android.OS.Build.Model,
-                sw_version = "1.0"
+                sw_version = Android.OS.Build.RadioVersion
             });
             string payload = JsonConvert.SerializeObject(dict);
             this.Publish($"homeassistant/{component}/{model}/{unique_id}/config", payload);

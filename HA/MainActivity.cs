@@ -121,7 +121,6 @@ namespace HA
                 txtPassword.Text = "public";
             }
 
-
             // 注册传感器
             SensorManager sensorManager = GetSystemService(Context.SensorService) as SensorManager;
             sensorManager.RegisterListener(this, sensorManager.GetDefaultSensor(SensorType.Light), SensorDelay.Fastest);
@@ -145,6 +144,7 @@ namespace HA
             {
                 isStart = true;
 
+                #region 生成浮动像素点
                 // 生成浮动像素点
                 /*
                 WindowManagerLayoutParams layoutParams = new WindowManagerLayoutParams();
@@ -246,6 +246,8 @@ namespace HA
                 };
                 WindowManager.AddView(button, layoutParams);
                 */
+                #endregion
+
                 log("开始连接MQTT服务。。。");
                 mqttHA = new MqttHA(ip, port, user, password);
                 mqttHA.Connect(mqttEvent =>
@@ -368,7 +370,7 @@ namespace HA
                         while (true)
                         {
                             Dictionary<string, string> pad = mqttHA.ConfigSensor(deviceInfo.DeviceId, deviceInfo.DeviceName, "mdi:tablet", "");
-                            Dictionary<string,string> battery = mqttHA.ConfigSensor(deviceInfo.DeviceId, $"{deviceInfo.DeviceName} 电量", "mdi:battery", "%");
+                            Dictionary<string,string> battery = mqttHA.ConfigSensor(deviceInfo.DeviceId, $"{deviceInfo.DeviceName} 电量", "mdi:battery", "%", "battery");
                             Dictionary<string, string> volume = mqttHA.ConfigSensor(deviceInfo.DeviceId, $"{deviceInfo.DeviceName} 音量", "mdi:volume-high", "");
                             Dictionary<string, string> lx = mqttHA.ConfigSensor(deviceInfo.DeviceId, $"{deviceInfo.DeviceName} 光照传感器", "mdi:brightness-5", "lx");
                             Dictionary<string, string> brightness = mqttHA.ConfigSensor(deviceInfo.DeviceId, $"{deviceInfo.DeviceName} 屏幕亮度", "mdi:brightness-6", "%");
@@ -377,9 +379,9 @@ namespace HA
 
                             System.Threading.Thread.Sleep(2000);
                             // 状态
-                            mqttHA.Publish(pad["state_topic"], Android.OS.Build.User);
+                            mqttHA.Publish(pad["state_topic"], Android.OS.Build.Brand);
                             mqttHA.Publish(volume["state_topic"], deviceInfo.Volume.ToString());
-                            mqttHA.Publish(wifi["state_topic"], deviceInfo.wifiInfo.SSID);
+                            mqttHA.Publish(wifi["state_topic"], deviceInfo.wifiInfo.SSID.Trim('"'));
                             mqttHA.Publish(storage["state_topic"], deviceInfo.StorageAvailable);
                             mqttHA.Publish(battery["state_topic"], deviceInfo.Battery.ToString());
                             mqttHA.Publish(lx["state_topic"], deviceInfo.LightSensor.ToString());
@@ -399,7 +401,7 @@ namespace HA
                             mqttHA.PublishJson(volume["attributes_topic"], volumeAttributes);
                             // WiFi
                             Dictionary<string, string> wifiAttributes = new Dictionary<string, string>();
-                            wifiAttributes.Add("SSID", deviceInfo.wifiInfo.SSID.ToString());
+                            wifiAttributes.Add("SSID", deviceInfo.wifiInfo.SSID.Trim('"'));
                             wifiAttributes.Add("Rssi", deviceInfo.wifiInfo.Rssi.ToString());
                             wifiAttributes.Add("IpAddress", deviceInfo.wifiInfo.IpAddress.ToString());
                             wifiAttributes.Add("MacAddress", deviceInfo.wifiInfo.MacAddress);
@@ -408,6 +410,7 @@ namespace HA
                             Dictionary<string, string> padAttributes = new Dictionary<string, string>();
                             padAttributes.Add("IP Address", deviceInfo.IP);
                             padAttributes.Add("DeviceId", deviceInfo.DeviceId);
+                            padAttributes.Add("UpdatedTime", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
                             padAttributes.Add("Battery", deviceInfo.Battery.ToString());
                             padAttributes.Add("VoiceTopic", voiceTopic);
                             padAttributes.Add("VoiceTextTopic", voiceTextTopic);
@@ -427,6 +430,9 @@ namespace HA
                         }
                     });
                     thread.Start();
+                }, disEvent=>
+                {
+                    log("断开连接了哦");
                 });
 
                 txtIP.Enabled = false;

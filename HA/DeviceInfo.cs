@@ -54,9 +54,9 @@ namespace HA
             // 电量
             Intent intent = new ContextWrapper(activity).RegisterReceiver(null, new IntentFilter(Intent.ActionBatteryChanged));
             this.Battery = intent.GetIntExtra(BatteryManager.ExtraLevel, -1) * 100 / intent.GetIntExtra(BatteryManager.ExtraScale, -1);
-            // 手机信息
-            TelephonyManager telephonyManager = activity.GetSystemService(Context.TelephonyService) as TelephonyManager;            
-            this.DeviceId = telephonyManager.DeviceId;
+            // 手机信息(获取不到，会出现异常)
+            // TelephonyManager telephonyManager = activity.GetSystemService(Context.TelephonyService) as TelephonyManager;            
+            this.DeviceId = Android.OS.Build.Serial;
             this.DeviceName = Android.OS.Build.Model;
 
             // Wifi信息
