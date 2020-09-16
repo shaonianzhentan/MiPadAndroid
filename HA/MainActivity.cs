@@ -371,10 +371,10 @@ namespace HA
                         {
                             Dictionary<string, string> pad = mqttHA.ConfigSensor(deviceInfo.DeviceId, deviceInfo.DeviceName, "mdi:tablet", "");
                             Dictionary<string,string> battery = mqttHA.ConfigSensor(deviceInfo.DeviceId, $"{deviceInfo.DeviceName} 电量", "mdi:battery", "%", "battery");
-                            Dictionary<string, string> volume = mqttHA.ConfigSensor(deviceInfo.DeviceId, $"{deviceInfo.DeviceName} 音量", "mdi:volume-high", "");
+                            Dictionary<string, string> volume = mqttHA.ConfigSensor(deviceInfo.DeviceId, $"{deviceInfo.DeviceName} 音量", "mdi:volume-high");
                             Dictionary<string, string> lx = mqttHA.ConfigSensor(deviceInfo.DeviceId, $"{deviceInfo.DeviceName} 光照传感器", "mdi:brightness-5", "lx");
-                            Dictionary<string, string> brightness = mqttHA.ConfigSensor(deviceInfo.DeviceId, $"{deviceInfo.DeviceName} 屏幕亮度", "mdi:brightness-6", "%");
-                            Dictionary<string, string> storage = mqttHA.ConfigSensor(deviceInfo.DeviceId, $"{deviceInfo.DeviceName} 存储空间", "mdi:harddisk", "");
+                            Dictionary<string, string> brightness = mqttHA.ConfigSensor(deviceInfo.DeviceId, $"{deviceInfo.DeviceName} 屏幕亮度", "mdi:brightness-6");
+                            Dictionary<string, string> storage = mqttHA.ConfigSensor(deviceInfo.DeviceId, $"{deviceInfo.DeviceName} 存储空间", "mdi:harddisk");
                             Dictionary<string, string> wifi = mqttHA.ConfigSensor(deviceInfo.DeviceId, $"{deviceInfo.DeviceName} WiFi", "mdi:wifi", "");
 
                             System.Threading.Thread.Sleep(2000);

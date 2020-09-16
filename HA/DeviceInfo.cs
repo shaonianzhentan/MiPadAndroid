@@ -56,7 +56,7 @@ namespace HA
             this.Battery = intent.GetIntExtra(BatteryManager.ExtraLevel, -1) * 100 / intent.GetIntExtra(BatteryManager.ExtraScale, -1);
             // 手机信息(获取不到，会出现异常)
             // TelephonyManager telephonyManager = activity.GetSystemService(Context.TelephonyService) as TelephonyManager;            
-            this.DeviceId = Android.OS.Build.Serial;
+            this.DeviceId = Android.OS.Build.GetSerial();
             this.DeviceName = Android.OS.Build.Model;
 
             // Wifi信息
@@ -65,19 +65,19 @@ namespace HA
             File datapath = Android.OS.Environment.DataDirectory;
             StatFs dataFs = new StatFs(datapath.Path);
 
-            this.StorageTotal = getUnit(dataFs.BlockCount * dataFs.BlockSize);
-            this.StorageAvailable = getUnit(Math.Abs(dataFs.AvailableBlocks * dataFs.BlockSize));
-            this.StorageFree = getUnit(Math.Abs(dataFs.FreeBlocks * dataFs.BlockSize));
+            this.StorageTotal = getUnit(dataFs.AvailableBlocksLong * dataFs.BlockSizeLong);
+            this.StorageAvailable = getUnit(Math.Abs(dataFs.AvailableBlocksLong * dataFs.BlockSizeLong));
+            this.StorageFree = getUnit(Math.Abs(dataFs.FreeBlocksLong * dataFs.BlockSizeLong));
 
             // IP地址
             this.IP = System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces()
-.Select(p => p.GetIPProperties())
-.SelectMany(p => p.UnicastAddresses)
-.Where(p => p.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork && !System.Net.IPAddress.IsLoopback(p.Address))
-.FirstOrDefault()?.Address.ToString();
+                        .Select(p => p.GetIPProperties())
+                        .SelectMany(p => p.UnicastAddresses)
+                        .Where(p => p.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork && !System.Net.IPAddress.IsLoopback(p.Address))
+                        .FirstOrDefault()?.Address.ToString();
         }
 
-        private string getUnit(float size)
+        private string getUnit(long size)
         {
             int index = 0;
             while (size > 1024 && index < 4)
