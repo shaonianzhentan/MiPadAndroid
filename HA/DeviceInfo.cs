@@ -45,36 +45,43 @@ namespace HA
 
         public DeviceInfo(MainActivity activity)
         {
-            this.activity = activity;
-            this.pm = activity.GetSystemService(Context.PowerService) as PowerManager;
-            this.policyManager = activity.GetSystemService(Context.DevicePolicyService) as DevicePolicyManager;
-            this.wakeLock = pm.NewWakeLock(WakeLockFlags.Full, "test");
-            // 媒体声音
-            this.audioManager = activity.GetSystemService(Context.AudioService) as AudioManager;
-            // 电量
-            Intent intent = new ContextWrapper(activity).RegisterReceiver(null, new IntentFilter(Intent.ActionBatteryChanged));
-            this.Battery = intent.GetIntExtra(BatteryManager.ExtraLevel, -1) * 100 / intent.GetIntExtra(BatteryManager.ExtraScale, -1);
-            // 手机信息(获取不到，会出现异常)
-            // TelephonyManager telephonyManager = activity.GetSystemService(Context.TelephonyService) as TelephonyManager;            
-            this.DeviceId = Android.OS.Build.GetSerial();
-            this.DeviceName = Android.OS.Build.Model;
+            try
+            {
+                this.activity = activity;
+                this.pm = activity.GetSystemService(Context.PowerService) as PowerManager;
+                this.policyManager = activity.GetSystemService(Context.DevicePolicyService) as DevicePolicyManager;
+                this.wakeLock = pm.NewWakeLock(WakeLockFlags.Full, "test");
+                // 媒体声音
+                this.audioManager = activity.GetSystemService(Context.AudioService) as AudioManager;
+                // 电量
+                Intent intent = new ContextWrapper(activity).RegisterReceiver(null, new IntentFilter(Intent.ActionBatteryChanged));
+                this.Battery = intent.GetIntExtra(BatteryManager.ExtraLevel, -1) * 100 / intent.GetIntExtra(BatteryManager.ExtraScale, -1);
+                // 手机信息(获取不到，会出现异常)
+                // TelephonyManager telephonyManager = activity.GetSystemService(Context.TelephonyService) as TelephonyManager;            
+                this.DeviceId = Android.OS.Build.Serial;
+                this.DeviceName = Android.OS.Build.Model;
 
-            // Wifi信息
-            WifiManager wifiManager = activity.GetSystemService(Context.WifiService) as WifiManager;
-            this.wifiInfo = wifiManager.ConnectionInfo;
-            File datapath = Android.OS.Environment.DataDirectory;
-            StatFs dataFs = new StatFs(datapath.Path);
+                // Wifi信息
+                WifiManager wifiManager = activity.GetSystemService(Context.WifiService) as WifiManager;
+                this.wifiInfo = wifiManager.ConnectionInfo;
+                File datapath = Android.OS.Environment.DataDirectory;
+                StatFs dataFs = new StatFs(datapath.Path);
 
-            this.StorageTotal = getUnit(dataFs.AvailableBlocksLong * dataFs.BlockSizeLong);
-            this.StorageAvailable = getUnit(Math.Abs(dataFs.AvailableBlocksLong * dataFs.BlockSizeLong));
-            this.StorageFree = getUnit(Math.Abs(dataFs.FreeBlocksLong * dataFs.BlockSizeLong));
+                this.StorageTotal = getUnit(dataFs.AvailableBlocksLong * dataFs.BlockSizeLong);
+                this.StorageAvailable = getUnit(Math.Abs(dataFs.AvailableBlocksLong * dataFs.BlockSizeLong));
+                this.StorageFree = getUnit(Math.Abs(dataFs.FreeBlocksLong * dataFs.BlockSizeLong));
 
-            // IP地址
-            this.IP = System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces()
-                        .Select(p => p.GetIPProperties())
-                        .SelectMany(p => p.UnicastAddresses)
-                        .Where(p => p.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork && !System.Net.IPAddress.IsLoopback(p.Address))
-                        .FirstOrDefault()?.Address.ToString();
+                // IP地址
+                this.IP = System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces()
+                            .Select(p => p.GetIPProperties())
+                            .SelectMany(p => p.UnicastAddresses)
+                            .Where(p => p.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork && !System.Net.IPAddress.IsLoopback(p.Address))
+                            .FirstOrDefault()?.Address.ToString();
+            }
+            catch(System.Exception ex)
+            {
+                Toast.MakeText(activity, ex.Message, ToastLength.Long);
+            }
         }
 
         private string getUnit(long size)

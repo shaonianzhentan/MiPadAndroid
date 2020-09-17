@@ -129,7 +129,6 @@ namespace HA
 
         private void Button_Click(object sender, System.EventArgs e)
         {
-            if (deviceInfo == null) deviceInfo = new DeviceInfo(this);
             string ip = txtIP.Text.Trim();
             string port = txtPort.Text.Trim();
             string user = txtUser.Text.Trim();
@@ -143,6 +142,13 @@ namespace HA
             else if (isStart == false)
             {
                 isStart = true;
+
+
+                if (deviceInfo == null)
+                {
+                    log("获取设备信息");
+                    deviceInfo = new DeviceInfo(this);
+                }
 
                 #region 生成浮动像素点
                 // 生成浮动像素点
@@ -265,7 +271,7 @@ namespace HA
                     string voiceTopic = $"android/{deviceInfo.DeviceId}/voice";
                     string voiceTextTopic = $"android/{deviceInfo.DeviceId}/voice/text";
                     log($"订阅【语音识别】：{voiceTopic}");
-                    Java.IO.File audioFile = null;
+                    string audioFilePath = "";
                     bool isRecording = false;
                     mqttHA.AddSubscribe(voiceTopic, (payload) =>
                     {
@@ -279,7 +285,7 @@ namespace HA
                                     isRecording = true;
                                     // 震动一下
                                     Vibrator vibrator = GetSystemService(Context.VibratorService) as Vibrator;
-                                    vibrator.Vibrate(VibrationEffect.CreateOneShot(500, 1));
+                                    vibrator.Vibrate(500);
 
                                     log("开始录音");
                                     int bufferSizeInBytes = AudioRecord.GetMinBufferSize(16000, ChannelIn.Mono, Encoding.Pcm16bit);
@@ -287,8 +293,9 @@ namespace HA
                                     audioRecord.StartRecording();
                                     int readsize = 0;
                                     byte[] audiodata = new byte[bufferSizeInBytes];
-                                    audioFile = Java.IO.File.CreateTempFile("record_", ".pcm");
-                                    Java.IO.FileOutputStream fos = new Java.IO.FileOutputStream(audioFile.AbsolutePath);
+                                    Java.IO.File audioFile = Java.IO.File.CreateTempFile("record_", ".pcm");
+                                    audioFilePath = audioFile.AbsolutePath;
+                                    Java.IO.FileOutputStream fos = new Java.IO.FileOutputStream(audioFilePath);                                    
                                     System.DateTime today = System.DateTime.Now;
                                     while (isRecording)
                                     {
@@ -315,11 +322,12 @@ namespace HA
                                     }
                                 }
                                 // 结束录音
-                                if (payload == "stop" && isRecording && audioFile != null)
+                                if (payload == "stop" && isRecording)
                                 {
+                                    isRecording = false;
                                     log("正在识别");
                                     // 使用百度语音识别
-                                    string result = RecognizeText(audioFile.AbsolutePath);
+                                    string result = RecognizeText(audioFilePath);
                                     if (string.IsNullOrEmpty(result))
                                     {
                                         log("语音识别结果错误");
@@ -329,8 +337,6 @@ namespace HA
                                         log(result);
                                         mqttHA.Publish(voiceTextTopic, result);
                                     }
-                                    audioFile = null;
-                                    isRecording = false;
                                 }
                             }
                             catch (System.Exception ex)
