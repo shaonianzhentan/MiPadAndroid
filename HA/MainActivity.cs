@@ -262,71 +262,82 @@ namespace HA
 
                     log("连接MQTT服务成功");
                     // 语音识别
-                    string voiceTopic = $"android/{deviceInfo.DeviceId}/voice/start";
+                    string voiceTopic = $"android/{deviceInfo.DeviceId}/voice";
                     string voiceTextTopic = $"android/{deviceInfo.DeviceId}/voice/text";
                     log($"订阅【语音识别】：{voiceTopic}");
-                    bool isRecord = false;
+                    Java.IO.File audioFile = null;
+                    bool isRecording = false;
                     mqttHA.AddSubscribe(voiceTopic, (payload) =>
                     {
-                        if (isRecord) return;
-                        isRecord = true;
-                        // 震动一下
-                        Vibrator vibrator = GetSystemService(Context.VibratorService) as Vibrator;
-                        vibrator.Vibrate(500);
                         Task.Run(() =>
                         {
                             try
                             {
-                                log("开始录音");
-
-                                int bufferSizeInBytes = AudioRecord.GetMinBufferSize(16000, ChannelIn.Mono, Encoding.Pcm16bit);
-                                AudioRecord audioRecord = new AudioRecord(AudioSource.Mic, 16000, ChannelIn.Mono, Encoding.Pcm16bit, bufferSizeInBytes);
-                                audioRecord.StartRecording();
-                                byte[] audiodata = new byte[bufferSizeInBytes];
-                                int readsize = 0;
-                                var audioFile = Java.IO.File.CreateTempFile("record_", ".pcm");
-                                Java.IO.FileOutputStream fos = new Java.IO.FileOutputStream(audioFile.AbsolutePath);
-
-                                System.DateTime stopTime = System.DateTime.Now.AddSeconds(4);
-                                while (System.DateTime.Now.Ticks < stopTime.Ticks)
+                                // 开始录音
+                                if (payload == "start" && !isRecording)
                                 {
-                                    readsize = audioRecord.Read(audiodata, 0, bufferSizeInBytes);
-                                    if (-3 != readsize)
+                                    isRecording = true;
+                                    // 震动一下
+                                    Vibrator vibrator = GetSystemService(Context.VibratorService) as Vibrator;
+                                    vibrator.Vibrate(VibrationEffect.CreateOneShot(500, 1));
+
+                                    log("开始录音");
+                                    int bufferSizeInBytes = AudioRecord.GetMinBufferSize(16000, ChannelIn.Mono, Encoding.Pcm16bit);
+                                    AudioRecord audioRecord = new AudioRecord(AudioSource.Mic, 16000, ChannelIn.Mono, Encoding.Pcm16bit, bufferSizeInBytes);
+                                    audioRecord.StartRecording();
+                                    int readsize = 0;
+                                    byte[] audiodata = new byte[bufferSizeInBytes];
+                                    audioFile = Java.IO.File.CreateTempFile("record_", ".pcm");
+                                    Java.IO.FileOutputStream fos = new Java.IO.FileOutputStream(audioFile.AbsolutePath);
+                                    System.DateTime today = System.DateTime.Now;
+                                    while (isRecording)
                                     {
-                                        try
+                                        readsize = audioRecord.Read(audiodata, 0, bufferSizeInBytes);
+                                        if (-3 != readsize)
                                         {
-                                            fos.Write(audiodata);
+                                            try
+                                            {
+                                                fos.Write(audiodata);
+                                            }
+                                            catch (IOException ioEx)
+                                            {
+                                                log(ioEx.Message);
+                                            }
                                         }
-                                        catch (IOException ioEx)
+                                        // 判断是否超过十秒
+                                        if (System.DateTime.Now.Subtract(today).TotalSeconds > 10)
                                         {
-                                            log(ioEx.Message);
+                                            if (isRecording)
+                                            {
+                                                throw new System.Exception("录音超过10秒, 还没有结束，所以中止掉");
+                                            }
                                         }
                                     }
                                 }
-
-                                log("正在识别");
-                                // 使用百度语音识别
-                                var ai = new Baidu.Aip.Speech.Asr("17944158", "HLhr7GE05bY0gAzalObMHtUE", "fzFiBnLYKSMeFddsDGVZBnsyV0O0WACT");
-                                ai.Timeout = 60000;
-                                var data = File.ReadAllBytes(audioFile.AbsolutePath);
-                                // 可选参数
-                                var options = new Dictionary<string, object>();
-                                options.Add("dev_pid", 1537);
-                                ai.Timeout = 120000; // 若语音较长，建议设置更大的超时时间. ms
-                                var result = ai.Recognize(data, "pcm", 16000, options);
-                                if (System.Convert.ToInt32(result["err_no"]) == 0)
+                                // 结束录音
+                                if (payload == "stop" && isRecording && audioFile != null)
                                 {
-                                    string msg = result["result"][0].ToString();
-                                    log(msg);
-                                    mqttHA.Publish(voiceTextTopic, msg);
+                                    log("正在识别");
+                                    // 使用百度语音识别
+                                    string result = RecognizeText(audioFile.AbsolutePath);
+                                    if (string.IsNullOrEmpty(result))
+                                    {
+                                        log("语音识别结果错误");
+                                    }
+                                    else
+                                    {
+                                        log(result);
+                                        mqttHA.Publish(voiceTextTopic, result);
+                                    }
+                                    audioFile = null;
+                                    isRecording = false;
                                 }
                             }
                             catch (System.Exception ex)
                             {
                                 log($"录音异常： {ex.Message}");
+                                isRecording = false;
                             }
-                            log("语音识别结束");
-                            isRecord = false;
                         });
                     });
 
@@ -440,6 +451,24 @@ namespace HA
                 txtUser.Enabled = false;
                 txtPassword.Enabled = false;
             }
+        }
+
+        string RecognizeText(string filePath)
+        {
+            // 使用百度语音识别
+            var ai = new Baidu.Aip.Speech.Asr("17944158", "HLhr7GE05bY0gAzalObMHtUE", "fzFiBnLYKSMeFddsDGVZBnsyV0O0WACT");
+            ai.Timeout = 60000;
+            var data = File.ReadAllBytes(filePath);
+            // 可选参数
+            var options = new Dictionary<string, object>();
+            options.Add("dev_pid", 1537);
+            ai.Timeout = 120000; // 若语音较长，建议设置更大的超时时间. ms
+            var result = ai.Recognize(data, "pcm", 16000, options);
+            if (System.Convert.ToInt32(result["err_no"]) == 0)
+            {
+                return result["result"][0].ToString();
+            }
+            return "";
         }
 
         void log(string msg)
