@@ -125,6 +125,9 @@ namespace HA
             SensorManager sensorManager = GetSystemService(Context.SensorService) as SensorManager;
             sensorManager.RegisterListener(this, sensorManager.GetDefaultSensor(SensorType.Light), SensorDelay.Fastest);
             // sensorManager.RegisterListener(this, sensorManager.GetDefaultSensor(SensorType.Proximity), SensorDelay.Normal);
+
+            // 启动音乐服务
+            StartService(new Intent(this, typeof(MusicService)));
         }
 
         private void Button_Click(object sender, System.EventArgs e)
