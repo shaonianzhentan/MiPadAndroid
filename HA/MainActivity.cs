@@ -128,6 +128,8 @@ namespace HA
 
             // 启动音乐服务
             StartService(new Intent(this, typeof(MusicService)));
+            // 提示常驻通知
+            AddNotification();
         }
 
         private void Button_Click(object sender, System.EventArgs e)
@@ -523,6 +525,29 @@ namespace HA
                     this.log(e.Sensor.Name + " : " + e.Values[0].ToString());
                 }
             }
+        }
+
+        // 添加通知
+        public void AddNotification()
+        {
+            try
+            {
+                NotificationManager nm = this.GetSystemService(Context.NotificationService) as NotificationManager;
+                Notification n = new Notification();
+                n.Icon = Resource.Drawable.abc_ic_menu_share_mtrl_alpha;
+                n.When = System.DateTime.Now.Ticks;
+                n.Flags = NotificationFlags.OngoingEvent;
+
+                Intent intent = new Intent(this, typeof(MainActivity));
+                PendingIntent pendingIntent = PendingIntent.GetActivity(this, 0, intent, 0);
+                n.SetLatestEventInfo(this, "HA", "正在运行中...", pendingIntent);
+                nm.Notify(123, n);
+            }
+            catch (Exception ex)
+            {
+                log(ex.Message);
+            }
+          
         }
     }
 }
