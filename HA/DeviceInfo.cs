@@ -67,8 +67,8 @@ namespace HA
                 File datapath = Android.OS.Environment.DataDirectory;
                 StatFs dataFs = new StatFs(datapath.Path);
 
-                this.StorageTotal = getUnit(dataFs.AvailableBlocksLong * dataFs.BlockSizeLong);
-                this.StorageAvailable = getUnit(Math.Abs(dataFs.AvailableBlocksLong * dataFs.BlockSizeLong));
+                this.StorageTotal = getUnit(dataFs.TotalBytes);
+                this.StorageAvailable = getUnit(dataFs.AvailableBytes);
                 this.StorageFree = getUnit(Math.Abs(dataFs.FreeBlocksLong * dataFs.BlockSizeLong));
 
                 // IP地址

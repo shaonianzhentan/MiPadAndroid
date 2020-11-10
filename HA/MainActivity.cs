@@ -129,7 +129,7 @@ namespace HA
             // 启动音乐服务
             StartService(new Intent(this, typeof(MusicService)));
             // 提示常驻通知
-            AddNotification();
+            // AddNotification();
         }
 
         private void Button_Click(object sender, System.EventArgs e)
