@@ -90,19 +90,19 @@ namespace HA
 			global::Xamarin.Essentials.Resource.Drawable.notification_template_icon_low_bg = global::HA.Resource.Drawable.notification_template_icon_low_bg;
 			global::Xamarin.Essentials.Resource.Drawable.notification_tile_bg = global::HA.Resource.Drawable.notification_tile_bg;
 			global::Xamarin.Essentials.Resource.Drawable.notify_panel_notification_icon_bg = global::HA.Resource.Drawable.notify_panel_notification_icon_bg;
+			global::Xamarin.Essentials.Resource.Id.actions = global::HA.Resource.Id.actions;
 			global::Xamarin.Essentials.Resource.Id.action_container = global::HA.Resource.Id.action_container;
 			global::Xamarin.Essentials.Resource.Id.action_divider = global::HA.Resource.Id.action_divider;
 			global::Xamarin.Essentials.Resource.Id.action_image = global::HA.Resource.Id.action_image;
 			global::Xamarin.Essentials.Resource.Id.action_text = global::HA.Resource.Id.action_text;
-			global::Xamarin.Essentials.Resource.Id.actions = global::HA.Resource.Id.actions;
 			global::Xamarin.Essentials.Resource.Id.all = global::HA.Resource.Id.all;
 			global::Xamarin.Essentials.Resource.Id.async = global::HA.Resource.Id.async;
 			global::Xamarin.Essentials.Resource.Id.blocking = global::HA.Resource.Id.blocking;
 			global::Xamarin.Essentials.Resource.Id.bottom = global::HA.Resource.Id.bottom;
 			global::Xamarin.Essentials.Resource.Id.browser_actions_header_text = global::HA.Resource.Id.browser_actions_header_text;
+			global::Xamarin.Essentials.Resource.Id.browser_actions_menu_items = global::HA.Resource.Id.browser_actions_menu_items;
 			global::Xamarin.Essentials.Resource.Id.browser_actions_menu_item_icon = global::HA.Resource.Id.browser_actions_menu_item_icon;
 			global::Xamarin.Essentials.Resource.Id.browser_actions_menu_item_text = global::HA.Resource.Id.browser_actions_menu_item_text;
-			global::Xamarin.Essentials.Resource.Id.browser_actions_menu_items = global::HA.Resource.Id.browser_actions_menu_items;
 			global::Xamarin.Essentials.Resource.Id.browser_actions_menu_view = global::HA.Resource.Id.browser_actions_menu_view;
 			global::Xamarin.Essentials.Resource.Id.center = global::HA.Resource.Id.center;
 			global::Xamarin.Essentials.Resource.Id.center_horizontal = global::HA.Resource.Id.center_horizontal;
@@ -157,14 +157,12 @@ namespace HA
 			global::Xamarin.Essentials.Resource.Style.Widget_Compat_NotificationActionContainer = global::HA.Resource.Style.Widget_Compat_NotificationActionContainer;
 			global::Xamarin.Essentials.Resource.Style.Widget_Compat_NotificationActionText = global::HA.Resource.Style.Widget_Compat_NotificationActionText;
 			global::Xamarin.Essentials.Resource.Style.Widget_Support_CoordinatorLayout = global::HA.Resource.Style.Widget_Support_CoordinatorLayout;
-			global::Xamarin.Essentials.Resource.Xml.xamarin_essentials_fileprovider_file_paths = global::HA.Resource.Xml.xamarin_essentials_fileprovider_file_paths;
 			global::Xamarin.Essentials.Resource.Styleable.ColorStateListItem = global::HA.Resource.Styleable.ColorStateListItem;
 			global::Xamarin.Essentials.Resource.Styleable.ColorStateListItem_alpha = global::HA.Resource.Styleable.ColorStateListItem_alpha;
 			global::Xamarin.Essentials.Resource.Styleable.ColorStateListItem_android_alpha = global::HA.Resource.Styleable.ColorStateListItem_android_alpha;
 			global::Xamarin.Essentials.Resource.Styleable.ColorStateListItem_android_color = global::HA.Resource.Styleable.ColorStateListItem_android_color;
 			global::Xamarin.Essentials.Resource.Styleable.CoordinatorLayout = global::HA.Resource.Styleable.CoordinatorLayout;
 			global::Xamarin.Essentials.Resource.Styleable.CoordinatorLayout_keylines = global::HA.Resource.Styleable.CoordinatorLayout_keylines;
-			global::Xamarin.Essentials.Resource.Styleable.CoordinatorLayout_statusBarBackground = global::HA.Resource.Styleable.CoordinatorLayout_statusBarBackground;
 			global::Xamarin.Essentials.Resource.Styleable.CoordinatorLayout_Layout = global::HA.Resource.Styleable.CoordinatorLayout_Layout;
 			global::Xamarin.Essentials.Resource.Styleable.CoordinatorLayout_Layout_android_layout_gravity = global::HA.Resource.Styleable.CoordinatorLayout_Layout_android_layout_gravity;
 			global::Xamarin.Essentials.Resource.Styleable.CoordinatorLayout_Layout_layout_anchor = global::HA.Resource.Styleable.CoordinatorLayout_Layout_layout_anchor;
@@ -173,13 +171,8 @@ namespace HA
 			global::Xamarin.Essentials.Resource.Styleable.CoordinatorLayout_Layout_layout_dodgeInsetEdges = global::HA.Resource.Styleable.CoordinatorLayout_Layout_layout_dodgeInsetEdges;
 			global::Xamarin.Essentials.Resource.Styleable.CoordinatorLayout_Layout_layout_insetEdge = global::HA.Resource.Styleable.CoordinatorLayout_Layout_layout_insetEdge;
 			global::Xamarin.Essentials.Resource.Styleable.CoordinatorLayout_Layout_layout_keyline = global::HA.Resource.Styleable.CoordinatorLayout_Layout_layout_keyline;
+			global::Xamarin.Essentials.Resource.Styleable.CoordinatorLayout_statusBarBackground = global::HA.Resource.Styleable.CoordinatorLayout_statusBarBackground;
 			global::Xamarin.Essentials.Resource.Styleable.FontFamily = global::HA.Resource.Styleable.FontFamily;
-			global::Xamarin.Essentials.Resource.Styleable.FontFamily_fontProviderAuthority = global::HA.Resource.Styleable.FontFamily_fontProviderAuthority;
-			global::Xamarin.Essentials.Resource.Styleable.FontFamily_fontProviderCerts = global::HA.Resource.Styleable.FontFamily_fontProviderCerts;
-			global::Xamarin.Essentials.Resource.Styleable.FontFamily_fontProviderFetchStrategy = global::HA.Resource.Styleable.FontFamily_fontProviderFetchStrategy;
-			global::Xamarin.Essentials.Resource.Styleable.FontFamily_fontProviderFetchTimeout = global::HA.Resource.Styleable.FontFamily_fontProviderFetchTimeout;
-			global::Xamarin.Essentials.Resource.Styleable.FontFamily_fontProviderPackage = global::HA.Resource.Styleable.FontFamily_fontProviderPackage;
-			global::Xamarin.Essentials.Resource.Styleable.FontFamily_fontProviderQuery = global::HA.Resource.Styleable.FontFamily_fontProviderQuery;
 			global::Xamarin.Essentials.Resource.Styleable.FontFamilyFont = global::HA.Resource.Styleable.FontFamilyFont;
 			global::Xamarin.Essentials.Resource.Styleable.FontFamilyFont_android_font = global::HA.Resource.Styleable.FontFamilyFont_android_font;
 			global::Xamarin.Essentials.Resource.Styleable.FontFamilyFont_android_fontStyle = global::HA.Resource.Styleable.FontFamilyFont_android_fontStyle;
@@ -191,7 +184,16 @@ namespace HA
 			global::Xamarin.Essentials.Resource.Styleable.FontFamilyFont_fontVariationSettings = global::HA.Resource.Styleable.FontFamilyFont_fontVariationSettings;
 			global::Xamarin.Essentials.Resource.Styleable.FontFamilyFont_fontWeight = global::HA.Resource.Styleable.FontFamilyFont_fontWeight;
 			global::Xamarin.Essentials.Resource.Styleable.FontFamilyFont_ttcIndex = global::HA.Resource.Styleable.FontFamilyFont_ttcIndex;
+			global::Xamarin.Essentials.Resource.Styleable.FontFamily_fontProviderAuthority = global::HA.Resource.Styleable.FontFamily_fontProviderAuthority;
+			global::Xamarin.Essentials.Resource.Styleable.FontFamily_fontProviderCerts = global::HA.Resource.Styleable.FontFamily_fontProviderCerts;
+			global::Xamarin.Essentials.Resource.Styleable.FontFamily_fontProviderFetchStrategy = global::HA.Resource.Styleable.FontFamily_fontProviderFetchStrategy;
+			global::Xamarin.Essentials.Resource.Styleable.FontFamily_fontProviderFetchTimeout = global::HA.Resource.Styleable.FontFamily_fontProviderFetchTimeout;
+			global::Xamarin.Essentials.Resource.Styleable.FontFamily_fontProviderPackage = global::HA.Resource.Styleable.FontFamily_fontProviderPackage;
+			global::Xamarin.Essentials.Resource.Styleable.FontFamily_fontProviderQuery = global::HA.Resource.Styleable.FontFamily_fontProviderQuery;
 			global::Xamarin.Essentials.Resource.Styleable.GradientColor = global::HA.Resource.Styleable.GradientColor;
+			global::Xamarin.Essentials.Resource.Styleable.GradientColorItem = global::HA.Resource.Styleable.GradientColorItem;
+			global::Xamarin.Essentials.Resource.Styleable.GradientColorItem_android_color = global::HA.Resource.Styleable.GradientColorItem_android_color;
+			global::Xamarin.Essentials.Resource.Styleable.GradientColorItem_android_offset = global::HA.Resource.Styleable.GradientColorItem_android_offset;
 			global::Xamarin.Essentials.Resource.Styleable.GradientColor_android_centerColor = global::HA.Resource.Styleable.GradientColor_android_centerColor;
 			global::Xamarin.Essentials.Resource.Styleable.GradientColor_android_centerX = global::HA.Resource.Styleable.GradientColor_android_centerX;
 			global::Xamarin.Essentials.Resource.Styleable.GradientColor_android_centerY = global::HA.Resource.Styleable.GradientColor_android_centerY;
@@ -204,9 +206,7 @@ namespace HA
 			global::Xamarin.Essentials.Resource.Styleable.GradientColor_android_startY = global::HA.Resource.Styleable.GradientColor_android_startY;
 			global::Xamarin.Essentials.Resource.Styleable.GradientColor_android_tileMode = global::HA.Resource.Styleable.GradientColor_android_tileMode;
 			global::Xamarin.Essentials.Resource.Styleable.GradientColor_android_type = global::HA.Resource.Styleable.GradientColor_android_type;
-			global::Xamarin.Essentials.Resource.Styleable.GradientColorItem = global::HA.Resource.Styleable.GradientColorItem;
-			global::Xamarin.Essentials.Resource.Styleable.GradientColorItem_android_color = global::HA.Resource.Styleable.GradientColorItem_android_color;
-			global::Xamarin.Essentials.Resource.Styleable.GradientColorItem_android_offset = global::HA.Resource.Styleable.GradientColorItem_android_offset;
+			global::Xamarin.Essentials.Resource.Xml.xamarin_essentials_fileprovider_file_paths = global::HA.Resource.Xml.xamarin_essentials_fileprovider_file_paths;
 		}
 		
 		public partial class Animation
@@ -3708,101 +3708,95 @@ namespace HA
 			// aapt resource value: 0x7F0800A3
 			public const int text2 = 2131230883;
 			
-			// aapt resource value: 0x7F0800A8
-			public const int textinput_counter = 2131230888;
-			
 			// aapt resource value: 0x7F0800A9
-			public const int textinput_error = 2131230889;
+			public const int textinput_counter = 2131230889;
 			
 			// aapt resource value: 0x7F0800AA
-			public const int textinput_helper_text = 2131230890;
-			
-			// aapt resource value: 0x7F0800A4
-			public const int textSpacerNoButtons = 2131230884;
-			
-			// aapt resource value: 0x7F0800A5
-			public const int textSpacerNoTitle = 2131230885;
-			
-			// aapt resource value: 0x7F0800A6
-			public const int textStart = 2131230886;
-			
-			// aapt resource value: 0x7F0800A7
-			public const int text_input_password_toggle = 2131230887;
+			public const int textinput_error = 2131230890;
 			
 			// aapt resource value: 0x7F0800AB
-			public const int time = 2131230891;
+			public const int textinput_helper_text = 2131230891;
+			
+			// aapt resource value: 0x7F0800A4
+			public const int textRemoteip = 2131230884;
+			
+			// aapt resource value: 0x7F0800A5
+			public const int textSpacerNoButtons = 2131230885;
+			
+			// aapt resource value: 0x7F0800A6
+			public const int textSpacerNoTitle = 2131230886;
+			
+			// aapt resource value: 0x7F0800A7
+			public const int textStart = 2131230887;
+			
+			// aapt resource value: 0x7F0800A8
+			public const int text_input_password_toggle = 2131230888;
 			
 			// aapt resource value: 0x7F0800AC
-			public const int title = 2131230892;
+			public const int time = 2131230892;
 			
 			// aapt resource value: 0x7F0800AD
-			public const int titleDividerNoCustom = 2131230893;
+			public const int title = 2131230893;
 			
 			// aapt resource value: 0x7F0800AE
-			public const int title_template = 2131230894;
+			public const int titleDividerNoCustom = 2131230894;
 			
 			// aapt resource value: 0x7F0800AF
-			public const int top = 2131230895;
+			public const int title_template = 2131230895;
 			
 			// aapt resource value: 0x7F0800B0
-			public const int topPanel = 2131230896;
+			public const int top = 2131230896;
 			
 			// aapt resource value: 0x7F0800B1
-			public const int touch_outside = 2131230897;
+			public const int topPanel = 2131230897;
 			
 			// aapt resource value: 0x7F0800B2
-			public const int transition_current_scene = 2131230898;
+			public const int touch_outside = 2131230898;
 			
 			// aapt resource value: 0x7F0800B3
-			public const int transition_layout_save = 2131230899;
+			public const int transition_current_scene = 2131230899;
 			
 			// aapt resource value: 0x7F0800B4
-			public const int transition_position = 2131230900;
+			public const int transition_layout_save = 2131230900;
 			
 			// aapt resource value: 0x7F0800B5
-			public const int transition_scene_layoutid_cache = 2131230901;
+			public const int transition_position = 2131230901;
 			
 			// aapt resource value: 0x7F0800B6
-			public const int transition_transform = 2131230902;
+			public const int transition_scene_layoutid_cache = 2131230902;
 			
 			// aapt resource value: 0x7F0800B7
-			public const int txtIP = 2131230903;
+			public const int transition_transform = 2131230903;
 			
 			// aapt resource value: 0x7F0800B8
-			public const int txtLog = 2131230904;
+			public const int txtIP = 2131230904;
 			
 			// aapt resource value: 0x7F0800B9
-			public const int txtPassword = 2131230905;
+			public const int uniform = 2131230905;
 			
 			// aapt resource value: 0x7F0800BA
-			public const int txtPort = 2131230906;
+			public const int unlabeled = 2131230906;
 			
 			// aapt resource value: 0x7F0800BB
-			public const int txtUser = 2131230907;
+			public const int up = 2131230907;
 			
 			// aapt resource value: 0x7F0800BC
-			public const int uniform = 2131230908;
+			public const int useLogo = 2131230908;
 			
 			// aapt resource value: 0x7F0800BD
-			public const int unlabeled = 2131230909;
+			public const int view_offset_helper = 2131230909;
 			
 			// aapt resource value: 0x7F0800BE
-			public const int up = 2131230910;
+			public const int visible = 2131230910;
 			
 			// aapt resource value: 0x7F0800BF
-			public const int useLogo = 2131230911;
+			public const int webView1 = 2131230911;
 			
 			// aapt resource value: 0x7F0800C0
-			public const int view_offset_helper = 2131230912;
+			public const int withText = 2131230912;
 			
 			// aapt resource value: 0x7F0800C1
-			public const int visible = 2131230913;
-			
-			// aapt resource value: 0x7F0800C2
-			public const int withText = 2131230914;
-			
-			// aapt resource value: 0x7F0800C3
-			public const int wrap_content = 2131230915;
+			public const int wrap_content = 2131230913;
 			
 			static Id()
 			{
@@ -4275,13 +4269,13 @@ namespace HA
 			public const int status_bar_notification_info_overflow = 2131558455;
 			
 			// aapt resource value: 0x7F0D0038
-			public const int text_ip = 2131558456;
+			public const int textRemoteip = 2131558456;
 			
 			// aapt resource value: 0x7F0D0039
-			public const int text_password = 2131558457;
+			public const int text_ip = 2131558457;
 			
 			// aapt resource value: 0x7F0D003A
-			public const int text_port = 2131558458;
+			public const int text_password = 2131558458;
 			
 			// aapt resource value: 0x7F0D003B
 			public const int text_user = 2131558459;
