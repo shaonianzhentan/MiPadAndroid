@@ -73,7 +73,31 @@ namespace HA
             Button button = this.FindViewById<Button>(Resource.Id.button1);
             button.Click += (ss, ee) =>
             {
-                
+                #region 生成浮动像素点
+                WindowManagerLayoutParams layoutParams = new WindowManagerLayoutParams();
+                if (Build.VERSION.SdkInt >= BuildVersionCodes.M)
+                {
+                    layoutParams.Type = WindowManagerTypes.ApplicationOverlay;
+                }
+                else
+                {
+                    layoutParams.Type = WindowManagerTypes.SystemOverlay;
+                }
+                layoutParams.Format = Format.Rgba8888;
+                layoutParams.Gravity = GravityFlags.Left | GravityFlags.Top;
+                layoutParams.Flags = WindowManagerFlags.NotTouchModal | WindowManagerFlags.NotFocusable;
+                layoutParams.Width = 200;
+                layoutParams.Height = 100;
+                layoutParams.X = 0;
+                layoutParams.Y = 0;
+                Button pixButton = new Button(this.ApplicationContext);
+                pixButton.Text = System.DateTime.Now.ToString("HH:mm:ss");
+                pixButton.SetBackgroundColor(Color.Argb(200, 0, 0, 0));
+                pixButton.SetTextColor(Color.Red);               
+                WindowManager.AddView(pixButton, layoutParams);
+                #endregion
+
+
                 webView.LoadUrl("http://"+ txtRemoteIP.Text.Trim() + ":8123/ha_cloud_music-web/android.html?ip=" + ip + "&v=" + System.DateTime.Now.ToString("yyyyMMddHHmmss"));
                 if (mps == null)
                 {
@@ -89,7 +113,7 @@ namespace HA
                     {
                         try
                         {
-                            loop(httpListenner);
+                            loop(httpListenner, pixButton);
                         }
                         catch (Exception)
                         {
@@ -100,7 +124,7 @@ namespace HA
             };
         }
 
-        public void loop(HttpListener httpListenner)
+        public void loop(HttpListener httpListenner, Button button)
         {
             while (true)
             {
@@ -118,7 +142,10 @@ namespace HA
                     Dictionary<string, object> dict = new Dictionary<string, object>();
                     dict.Add("path", path);
                     dict.Add("update_time", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
-
+                    handler.Post(() =>
+                    {
+                        button.Text = System.DateTime.Now.ToString("HH:mm:ss");
+                    });
                     switch (path)
                     {
                         case "/get":
