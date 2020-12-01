@@ -5,23 +5,6 @@
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
-
-    <android.support.design.widget.TextInputEditText
-        android:hint="@string/text_ip"
-        android:id="@+id/txtIP"
-        android:editable="false"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
-    <android.support.design.widget.TextInputEditText
-        android:hint="@string/textRemoteip"
-        android:id="@+id/textRemoteip"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
-<Button
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:text="@string/action_settings"
-    android:id="@+id/button1"/>
     <android.webkit.WebView
         android:id="@+id/webView1"        
         android:layout_width="match_parent"
