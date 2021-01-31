@@ -26,12 +26,12 @@ using Android.Text.Method;
 using Java.Lang;
 using Android.Hardware;
 using Android.Graphics.Drawables;
-using System.Net;
 using System.Net.Sockets;
 using Android.Webkit;
 using Xamarin.Essentials;
 using Android.Net.Wifi;
 using YamlDotNet.Serialization;
+using System.Net;
 
 namespace HA
 {
@@ -41,9 +41,9 @@ namespace HA
         AudioManager audioManager = null;
         IMqttClient mqttClient = null;
         string topic = $"android/{Android.OS.Build.Serial}/".ToLower();
-        string voiceResult = "";
         bool isStartRecord = false;
         float LightSensor = 0;
+        string debugMsg = "";
 
         protected override void OnCreate(Bundle savedInstanceState)
         {
@@ -97,7 +97,6 @@ namespace HA
                     }
                 });
             }, null, 0, 10000);
-
         }
 
         async void ConnectMQTT(string host, int port = 1883)
@@ -144,37 +143,32 @@ namespace HA
                         Deserializer yamlDeserializer = new Deserializer();
                         Dictionary<string, object> dict = yamlDeserializer.Deserialize<Dictionary<string, object>>(yamlReader);
                         // 设置TTS
-                        string name = "tts";
-                        if (dict.ContainsKey(name))
+                        if (dict.ContainsKey("tts"))
                         {
-                            this.Speak(dict[name].ToString());
+                            this.Speak(dict["tts"].ToString());
                         }
                         // 设置屏幕亮度
-                        name = "brightness";
-                        if (dict.ContainsKey(name))
+                        if (dict.ContainsKey("brightness"))
                         {
-                            Settings.System.PutInt(this.ContentResolver, Settings.System.ScreenBrightness, System.Convert.ToInt32(dict[name]));
+                            Settings.System.PutInt(this.ContentResolver, Settings.System.ScreenBrightness, System.Convert.ToInt32(dict["brightness"]));
                         }
                         // 设置音乐音量
-                        name = "music_volume";
-                        if (dict.ContainsKey(name))
+                        if (dict.ContainsKey("music_volume"))
                         {
-                            audioManager.SetStreamVolume(Stream.Music, System.Convert.ToInt32(dict[name]), VolumeNotificationFlags.PlaySound);
+                            audioManager.SetStreamVolume(Stream.Music, System.Convert.ToInt32(dict["music_volume"]), VolumeNotificationFlags.PlaySound);
                         }
-                        // 命令
-                        name = "cmd";
-                        if (dict.ContainsKey(name))
+                        // 语音识别
+                        if (dict.ContainsKey("voice"))
                         {
-                            string value = dict[name].ToString();
-                            switch (value)
+                            int voiceTime = 5;
+                            if (dict.ContainsKey("voice_time"))
                             {
-                                // 录音识别
-                                case "voice":
-                                    this.StartRecord();
-                                    break;
+                                voiceTime = System.Convert.ToInt32(dict["voice_time"]);
+                                if (voiceTime > 5) voiceTime = 5;
+                                if (voiceTime < 2) voiceTime = 2;
                             }
+                            this.StartRecord(dict["voice"].ToString(), voiceTime);
                         }
-
                     }
                     catch (Exception ex)
                     {
@@ -214,12 +208,16 @@ namespace HA
             // 上报信息
             mqttClient.PublishAsync($"homeassistant/sensor/{unique_id}/config", JsonConvert.SerializeObject(dict));
 
-            this.PublishInfo("定时上报");
+            this.PublishInfo();
         }
 
 
-        void PublishInfo(string msg = "默认")
+        void PublishInfo(string msg = "")
         {
+            if (!string.IsNullOrEmpty(msg))
+            {
+                debugMsg = msg;
+            }
             Dictionary<string, object> dict = new Dictionary<string, object>();
             // 屏幕亮度
             int brightness = Settings.System.GetInt(this.ContentResolver, Settings.System.ScreenBrightness);            
@@ -248,8 +246,7 @@ namespace HA
             dict.Add("音乐音量", musicVolume);            
             dict.Add("光照传感器", LightSensor);
             // dict.Add("更新时间", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
-            dict.Add("语音识别", voiceResult);
-            dict.Add("调试消息", msg);
+            dict.Add("调试消息", debugMsg);
 
             mqttClient.PublishAsync($"{topic}state", battery.ToString());
             mqttClient.PublishAsync($"{topic}attributes", JsonConvert.SerializeObject(dict));
@@ -287,7 +284,7 @@ namespace HA
 
         #region 语音识别
         // 开始录音
-        void StartRecord()
+        void StartRecord(string url, int voiceTime)
         {
             if (isStartRecord) return;
             isStartRecord = true;
@@ -310,7 +307,7 @@ namespace HA
                 // 当前时间
                 System.DateTime today = System.DateTime.Now;
                 // 录音5秒
-                while (System.DateTime.Now.Subtract(today).TotalSeconds < 5)
+                while (System.DateTime.Now.Subtract(today).TotalSeconds < voiceTime)
                 {
                     readsize = audioRecord.Read(audiodata, 0, bufferSizeInBytes);
                     if (-3 != readsize)
@@ -325,37 +322,21 @@ namespace HA
                         }
                     }
                 }
-                this.RecognizeText(audioFilePath);
+                MainThread.BeginInvokeOnMainThread(() =>
+                {
+                    vibrator.Vibrate(200);
+                    // 将文件上传到指定地址
+                    string res = HttpHelper.HttpUploadFile(url, audioFilePath, null);
+                    this.PublishInfo(res);
+                });                
             }
-            catch
+            catch (Exception ex)
             {
-
+                this.PublishInfo(ex.Message);
             }
             finally
             {
                 isStartRecord = false;
-            }
-        }
-
-        void RecognizeText(string filePath)
-        {
-            // 使用百度语音识别
-            var ai = new Baidu.Aip.Speech.Asr("17944158", "HLhr7GE05bY0gAzalObMHtUE", "fzFiBnLYKSMeFddsDGVZBnsyV0O0WACT");
-            ai.Timeout = 60000;
-            var data = System.IO.File.ReadAllBytes(filePath);
-            // 可选参数
-            var options = new Dictionary<string, object>();
-            options.Add("dev_pid", 1537);
-            ai.Timeout = 120000; // 若语音较长，建议设置更大的超时时间. ms
-            var result = ai.Recognize(data, "pcm", 16000, options);
-            if (System.Convert.ToInt32(result["err_no"]) == 0)
-            {
-                voiceResult = result["result"][0].ToString();
-                this.PublishInfo("语音识别成功");
-            }
-            else
-            {
-                this.PublishInfo($"语音识别失败：{result["err_msg"]}");
             }
         }
 
