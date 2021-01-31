@@ -1,9 +1,9 @@
 class MiPadAndroidStateCard extends HTMLElement {
 
     /*
-     * ´¥·¢ÊÂ¼ş
-     * type: ÊÂ¼şÃû³Æ
-     * data: ÊÂ¼ş²ÎÊı
+     * è§¦å‘äº‹ä»¶
+     * type: äº‹ä»¶åç§°
+     * data: äº‹ä»¶å‚æ•°
      */
     fire(type, data) {
         const event = new Event(type, {
@@ -16,9 +16,9 @@ class MiPadAndroidStateCard extends HTMLElement {
     }
 
     /*
-     * µ÷ÓÃ·şÎñ
-     * service: ·şÎñÃû³Æ(Àı£ºlight.toggle)
-     * service_data£º·şÎñÊı¾İ(Àı£º{ entity_id: "light.xiao_mi_deng_pao" } )
+     * è°ƒç”¨æœåŠ¡
+     * service: æœåŠ¡åç§°(ä¾‹ï¼šlight.toggle)
+     * service_dataï¼šæœåŠ¡æ•°æ®(ä¾‹ï¼š{ entity_id: "light.xiao_mi_deng_pao" } )
      */
     callService(service_name, service_data = {}) {
         let arr = service_name.split('.')
@@ -27,13 +27,13 @@ class MiPadAndroidStateCard extends HTMLElement {
         this._hass.callService(domain, service, service_data)
     }
 
-    // Í¨Öª
+    // é€šçŸ¥
     toast(message) {
         this.fire("hass-notification", { message })
     }
 
     /*
-     * ½ÓÊÕHAºËĞÄ¶ÔÏó
+     * æ¥æ”¶HAæ ¸å¿ƒå¯¹è±¡
      */
     set hass(hass) {
         this._hass = hass
@@ -46,44 +46,44 @@ class MiPadAndroidStateCard extends HTMLElement {
         return this._stateObj
     }
 
-    // ½ÓÊÕµ±Ç°×´Ì¬¶ÔÏó
+    // æ¥æ”¶å½“å‰çŠ¶æ€å¯¹è±¡
     set stateObj(value) {
         this._stateObj = value
         // console.log(value)
         if (this.isCreated) this.updated()
     }
 
-    // ´´½¨½çÃæ
+    // åˆ›å»ºç•Œé¢
     created(hass) {
-        /* ***************** »ù´¡´úÂë ***************** */
+        /* ***************** åŸºç¡€ä»£ç  ***************** */
         const shadow = this.attachShadow({ mode: 'open' });
-        // ´´½¨Ãæ°å
+        // åˆ›å»ºé¢æ¿
         const ha_card = document.createElement('div');
         ha_card.className = 'custom-card-panel'
         ha_card.innerHTML = `
             <div>
-                ÆÁÄ»ÁÁ¶È£º<paper-slider  min="1" max="255"></paper-slider>
+                å±å¹•äº®åº¦ï¼š<paper-slider  min="1" max="255"></paper-slider>
             </div>
             <ul id="attrs"></ul>
         `
         shadow.appendChild(ha_card)
-        // ´´½¨ÑùÊ½
+        // åˆ›å»ºæ ·å¼
         const style = document.createElement('style')
         style.textContent = `
             .custom-card-panel{}
         `
         shadow.appendChild(style);
-        // ±£´æºËĞÄDOM¶ÔÏó
+        // ä¿å­˜æ ¸å¿ƒDOMå¯¹è±¡
         this.shadow = shadow
         this.$ = this.shadow.querySelector.bind(this.shadow)
-        // ´´½¨³É¹¦
+        // åˆ›å»ºæˆåŠŸ
         this.isCreated = true
-        /* ***************** ¸½¼Ó´úÂë ***************** */
+        /* ***************** é™„åŠ ä»£ç  ***************** */
         let { $ } = this
        
     }
 
-    // ¸üĞÂ½çÃæÊı¾İ
+    // æ›´æ–°ç•Œé¢æ•°æ®
     updated(hass) {
         let { $, _stateObj } = this
         $('#attrs').innerHTML = ''
@@ -94,5 +94,5 @@ class MiPadAndroidStateCard extends HTMLElement {
         })
     }
 }
-// ¶¨ÒåDOM¶ÔÏóÔªËØ
-customElements.define('MiPadAndroid-StateCard', MiPadAndroidStateCard);
+// å®šä¹‰DOMå¯¹è±¡å…ƒç´ 
+customElements.define('mipad-android-statecard', MiPadAndroidStateCard);
