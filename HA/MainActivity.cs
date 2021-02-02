@@ -255,34 +255,45 @@ namespace HA
             // WiFi管理
             WifiManager wifiManager = this.GetSystemService(Context.WifiService) as WifiManager;
             WifiInfo wifiInfo = wifiManager.ConnectionInfo;
-            // 电量
-            Intent intent = new ContextWrapper(this).RegisterReceiver(null, new IntentFilter(Intent.ActionBatteryChanged));
-            int battery = intent.GetIntExtra(BatteryManager.ExtraLevel, -1) * 100 / intent.GetIntExtra(BatteryManager.ExtraScale, -1);
             // 磁盘容量
             Java.IO.File datapath = Android.OS.Environment.DataDirectory;
             StatFs dataFs = new StatFs(datapath.Path);
+            // 电量
+            string battery = (Xamarin.Essentials.Battery.ChargeLevel * 100).ToString();
+            // 充电状态
+            string[] batteryState = new string[] { "Unknown", "Charging", "Discharging", "Full", "NotCharging", "NotPresent" };
 
             dict.Add("设置主题", $"{topic}set");
-            dict.Add("本机IP", getIP());
-            dict.Add("WiFi名称", wifiInfo.SSID.Trim('"'));
-            dict.Add("WiFi信号", wifiInfo.Rssi);
-            dict.Add("Mac地址", wifiInfo.MacAddress);
-            dict.Add("存储总量", getUnit(dataFs.TotalBytes));
-            dict.Add("存储剩余", getUnit(dataFs.AvailableBytes));
-            dict.Add("存储使用", getUnit(dataFs.TotalBytes - dataFs.AvailableBytes));
+            dict.Add("调试时间", debugTime);
+            dict.Add("调试消息", debugMsg);
+            
             dict.Add("屏幕亮度", brightness);
+            dict.Add("光照传感器", LightSensor);
             dict.Add("电量", battery);
+            dict.Add("充电状态", batteryState[(int)Xamarin.Essentials.Battery.State]);
+
             dict.Add("音乐音量", musicVolume);
             dict.Add("闹钟音量", alarmVolume);
             dict.Add("系统音量", systemVolume);
             dict.Add("音乐最大音量", musicVolumeMax);
             dict.Add("闹钟最大音量", alarmVolumeMax);
             dict.Add("系统最大音量", systemVolumeMax);
-            dict.Add("光照传感器", LightSensor);
-            dict.Add("调试时间", debugTime);
-            dict.Add("调试消息", debugMsg);
 
-            mqttClient.PublishAsync($"{topic}state", battery.ToString());
+            dict.Add("存储总量", getUnit(dataFs.TotalBytes));
+            dict.Add("存储剩余", getUnit(dataFs.AvailableBytes));
+            dict.Add("存储使用", getUnit(dataFs.TotalBytes - dataFs.AvailableBytes));
+
+            dict.Add("设备名称", Xamarin.Essentials.DeviceInfo.Name);
+            dict.Add("设备型号", Xamarin.Essentials.DeviceInfo.Model);
+            dict.Add("设备版本", Xamarin.Essentials.DeviceInfo.VersionString);
+            dict.Add("应用版本", Xamarin.Essentials.AppInfo.VersionString);
+
+            dict.Add("本机IP", getIP());
+            dict.Add("WiFi名称", wifiInfo.SSID.Trim('"'));
+            dict.Add("WiFi信号", wifiInfo.Rssi);
+            dict.Add("Mac地址", wifiInfo.MacAddress);
+
+            mqttClient.PublishAsync($"{topic}state", battery);
             mqttClient.PublishAsync($"{topic}attributes", JsonConvert.SerializeObject(dict));
         }
 
@@ -322,8 +333,7 @@ namespace HA
         {
             if (isStartRecord) return;
             isStartRecord = true;
-            // 震动一下
-            Vibrator vibrator = GetSystemService(Context.VibratorService) as Vibrator;
+            
             if (tips == "play")
             {
                 Ringtone rt = RingtoneManager.GetRingtone(this, RingtoneManager.GetDefaultUri(RingtoneType.Notification));
@@ -331,7 +341,8 @@ namespace HA
             }
             else
             {
-                vibrator.Vibrate(500);
+                // 震动一下
+                Xamarin.Essentials.Vibration.Vibrate(500);
             }
             try
             {
@@ -365,7 +376,7 @@ namespace HA
                 }
                 MainThread.BeginInvokeOnMainThread(() =>
                 {
-                    vibrator.Vibrate(200);
+                    Xamarin.Essentials.Vibration.Vibrate(200);
                     // 将文件上传到指定地址
                     string res = HttpHelper.HttpUploadFile(url, audioFilePath, null);
                     this.PublishInfo(res);
