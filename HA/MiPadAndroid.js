@@ -1,4 +1,4 @@
-class MiPadAndroidStateCard extends HTMLElement {
+class MiPadAndroid extends HTMLElement {
 
     /*
      * 触发事件
@@ -25,6 +25,10 @@ class MiPadAndroidStateCard extends HTMLElement {
         let domain = arr[0]
         let service = arr[1]
         this._hass.callService(domain, service, service_data)
+    }
+
+    mqttPublish(payload) {
+        this.callService('mqtt.publish', { topic: this.stateObj.attributes['设置主题'], payload })
     }
 
     // 通知
@@ -61,16 +65,73 @@ class MiPadAndroidStateCard extends HTMLElement {
         const ha_card = document.createElement('div');
         ha_card.className = 'custom-card-panel'
         ha_card.innerHTML = `
-            <div>
-                屏幕亮度：<paper-slider  min="1" max="255"></paper-slider>
+           <div class="flex">
+              <span>屏幕亮度</span>
+              <paper-slider
+                id="brightness"
+                value="1"
+                max="255"
+                pin
+                markers
+                style="flex: 1"
+              >
+              </paper-slider>
             </div>
-            <ul id="attrs"></ul>
+            <div class="flex">
+              <span>音乐音量</span>
+              <paper-slider
+                id="musicVolume"
+                value="1"
+                max="15"
+                pin
+                markers
+                style="flex: 1"
+              >
+              </paper-slider>
+            </div>
+            <div class="flex">
+              <span>闹钟音量</span>
+              <paper-slider
+                id="alarmVolume"
+                value="1"
+                max="15"
+                pin
+                markers
+                style="flex: 1"
+              >
+              </paper-slider>
+            </div>
+            <div class="flex">
+              <span>系统音量</span>
+              <paper-slider
+                id="systemVolume"
+                value="1"
+                max="15"
+                pin
+                markers
+                style="flex: 1"
+              >
+              </paper-slider>
+            </div>
+            <paper-input
+              id="ttsInput"
+              always-float-label
+              label="文本转语音"
+            ></paper-input>
+            <ha-attributes id="attrs"></ha-attributes>
         `
         shadow.appendChild(ha_card)
         // 创建样式
         const style = document.createElement('style')
         style.textContent = `
-            .custom-card-panel{}
+        .flex {
+            display: flex;
+            align-items: center;
+        }
+        .flex span {
+            color: #857c79;
+            font-size: 14px;
+        }
         `
         shadow.appendChild(style);
         // 保存核心DOM对象
@@ -80,19 +141,39 @@ class MiPadAndroidStateCard extends HTMLElement {
         this.isCreated = true
         /* ***************** 附加代码 ***************** */
         let { $ } = this
-       
+        const _this = this
+        $("#brightness").addEventListener("change", function () {
+            // console.log(this.value);
+            _this.mqttPublish(`brightness: ${this.value}`)
+        });
+        $("#musicVolume").addEventListener("change", function () {
+            // console.log(this.value);
+            _this.mqttPublish(`music_volume: ${this.value}`)
+        });
+        $("#alarmVolume").addEventListener("change", function () {
+            // console.log(this.value);
+            _this.mqttPublish(`alarm_volume: ${this.value}`)
+        });
+        $("#systemVolume").addEventListener("change", function () {
+            // console.log(this.value);
+            _this.mqttPublish(`system_volume: ${this.value}`)
+        });
+        $("#ttsInput").addEventListener("change", function (event) {
+            // console.log(this.value);
+            _this.mqttPublish(`tts: ${this.value}`)
+            this.value = "";
+        });
     }
 
     // 更新界面数据
     updated(hass) {
         let { $, _stateObj } = this
-        $('#attrs').innerHTML = ''
-        Object.keys(_stateObj.attributes).forEach(key => {
-            let li = document.createElement('li')
-            li.innerHTML = `${key}: ${_stateObj.attributes[key]}`
-            $('#attrs').appendChild(li)
-        })
+        $('#attrs').stateObj = _stateObj
+        $("#brightness").value = _stateObj.attributes['屏幕亮度'] || 0
+        $("#musicVolume").value = _stateObj.attributes['音乐音量'] || 0
+        $("#systemVolume").value = _stateObj.attributes['系统音量'] || 0
+        $("#alarmVolume").value = _stateObj.attributes['闹钟音量'] || 0
     }
 }
 // 定义DOM对象元素
-customElements.define('mipad-android-statecard', MiPadAndroidStateCard);
+customElements.define('mipad-android', MiPadAndroid);

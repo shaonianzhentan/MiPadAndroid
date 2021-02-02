@@ -32,6 +32,7 @@ using Xamarin.Essentials;
 using Android.Net.Wifi;
 using YamlDotNet.Serialization;
 using System.Net;
+using Android.Net;
 
 namespace HA
 {
@@ -43,6 +44,7 @@ namespace HA
         string topic = $"android/{Android.OS.Build.Serial}/".ToLower();
         bool isStartRecord = false;
         float LightSensor = 0;
+        string debugTime = "";
         string debugMsg = "";
 
         protected override void OnCreate(Bundle savedInstanceState)
@@ -96,7 +98,7 @@ namespace HA
                         }
                     }
                 });
-            }, null, 0, 10000);
+            }, null, 0, 12000);
         }
 
         async void ConnectMQTT(string host, int port = 1883)
@@ -145,21 +147,40 @@ namespace HA
                         // 设置TTS
                         if (dict.ContainsKey("tts"))
                         {
-                            this.Speak(dict["tts"].ToString());
+                            string tts = dict["tts"].ToString();
+                            this.Speak(tts);
+                            this.PublishInfo($"TTS：{tts}");
                         }
                         // 设置屏幕亮度
                         if (dict.ContainsKey("brightness"))
                         {
                             Settings.System.PutInt(this.ContentResolver, Settings.System.ScreenBrightness, System.Convert.ToInt32(dict["brightness"]));
+                            this.PublishInfo($"屏幕亮度：{dict["brightness"]}");
                         }
                         // 设置音乐音量
                         if (dict.ContainsKey("music_volume"))
                         {
                             audioManager.SetStreamVolume(Stream.Music, System.Convert.ToInt32(dict["music_volume"]), VolumeNotificationFlags.PlaySound);
+                            this.PublishInfo($"音乐音量：{dict["music_volume"]}");
+                        }
+                        // 设置闹钟音量
+                        if (dict.ContainsKey("alarm_volume"))
+                        {
+                            audioManager.SetStreamVolume(Stream.Alarm, System.Convert.ToInt32(dict["alarm_volume"]), VolumeNotificationFlags.PlaySound);
+                            this.PublishInfo($"闹钟音量：{dict["alarm_volume"]}");
+                        }
+                        // 设置系统音量
+                        if (dict.ContainsKey("system_volume"))
+                        {
+                            audioManager.SetStreamVolume(Stream.System, System.Convert.ToInt32(dict["system_volume"]), VolumeNotificationFlags.PlaySound);
+                            this.PublishInfo($"系统音量：{dict["system_volume"]}");
                         }
                         // 语音识别
                         if (dict.ContainsKey("voice"))
                         {
+                            // 提示方式
+                            string tips = dict.ContainsKey("tips") ? dict["tips"].ToString() : "";
+                            // 录音时长
                             int voiceTime = 5;
                             if (dict.ContainsKey("voice_time"))
                             {
@@ -167,7 +188,7 @@ namespace HA
                                 if (voiceTime > 5) voiceTime = 5;
                                 if (voiceTime < 2) voiceTime = 2;
                             }
-                            this.StartRecord(dict["voice"].ToString(), voiceTime);
+                            this.StartRecord(tips, dict["voice"].ToString(), voiceTime);
                         }
                     }
                     catch (Exception ex)
@@ -216,6 +237,7 @@ namespace HA
         {
             if (!string.IsNullOrEmpty(msg))
             {
+                debugTime = System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
                 debugMsg = msg;
             }
             Dictionary<string, object> dict = new Dictionary<string, object>();
@@ -223,6 +245,13 @@ namespace HA
             int brightness = Settings.System.GetInt(this.ContentResolver, Settings.System.ScreenBrightness);            
             // 音乐音量
             int musicVolume = audioManager.GetStreamVolume(Stream.Music);
+            int musicVolumeMax = audioManager.GetStreamMaxVolume(Android.Media.Stream.Music);
+            // 闹钟音量
+            int alarmVolume = audioManager.GetStreamVolume(Stream.Alarm);
+            int alarmVolumeMax = audioManager.GetStreamMaxVolume(Android.Media.Stream.Alarm);
+            // 系统音量
+            int systemVolume = audioManager.GetStreamVolume(Stream.System);
+            int systemVolumeMax = audioManager.GetStreamMaxVolume(Android.Media.Stream.System);
             // WiFi管理
             WifiManager wifiManager = this.GetSystemService(Context.WifiService) as WifiManager;
             WifiInfo wifiInfo = wifiManager.ConnectionInfo;
@@ -243,9 +272,14 @@ namespace HA
             dict.Add("存储使用", getUnit(dataFs.TotalBytes - dataFs.AvailableBytes));
             dict.Add("屏幕亮度", brightness);
             dict.Add("电量", battery);
-            dict.Add("音乐音量", musicVolume);            
+            dict.Add("音乐音量", musicVolume);
+            dict.Add("闹钟音量", alarmVolume);
+            dict.Add("系统音量", systemVolume);
+            dict.Add("音乐最大音量", musicVolumeMax);
+            dict.Add("闹钟最大音量", alarmVolumeMax);
+            dict.Add("系统最大音量", systemVolumeMax);
             dict.Add("光照传感器", LightSensor);
-            // dict.Add("更新时间", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            dict.Add("调试时间", debugTime);
             dict.Add("调试消息", debugMsg);
 
             mqttClient.PublishAsync($"{topic}state", battery.ToString());
@@ -284,14 +318,21 @@ namespace HA
 
         #region 语音识别
         // 开始录音
-        void StartRecord(string url, int voiceTime)
+        void StartRecord(string tips, string url, int voiceTime)
         {
             if (isStartRecord) return;
             isStartRecord = true;
             // 震动一下
             Vibrator vibrator = GetSystemService(Context.VibratorService) as Vibrator;
-            vibrator.Vibrate(500);
-
+            if (tips == "play")
+            {
+                Ringtone rt = RingtoneManager.GetRingtone(this, RingtoneManager.GetDefaultUri(RingtoneType.Notification));
+                rt.Play();
+            }
+            else
+            {
+                vibrator.Vibrate(500);
+            }
             try
             {
                 int bufferSizeInBytes = AudioRecord.GetMinBufferSize(16000, ChannelIn.Mono, Encoding.Pcm16bit);
