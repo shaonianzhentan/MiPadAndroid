@@ -12,7 +12,7 @@ API_URL = None
 def setup(hass, config):
     # 注册静态目录
     if hass is not None:
-        hass.http.register_static_path(ROOT_PATH, hass.config.path('custom_components/MiPadAndroid/local'), False)
+        hass.http.register_static_path(ROOT_PATH, hass.config.path(f'custom_components/{DOMAIN}/local'), False)
         hass.components.frontend.add_extra_js_url(hass, ROOT_PATH + '/MiPadAndroid.js?ver=' + VERSION)
         # 订阅服务
         hass.services.async_register(DOMAIN, 'load', load_data)
