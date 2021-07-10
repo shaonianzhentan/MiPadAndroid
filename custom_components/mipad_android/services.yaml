@@ -4,6 +4,7 @@ load:
     url:
       name: 网页链接地址
       description: 网页链接地址
+      required: true
       example: 'https://ha.jiluxinqing.com'
       selector:
         text:

@@ -1,4 +1,8 @@
-import socket, threading, json, requests, urllib
+import socket, threading, json, requests, urllib, logging
+
+
+_LOGGER = logging.getLogger(__name__)
+
 
 VERSION = '1.0'
 DOMAIN = 'mipad_android'
@@ -13,8 +17,18 @@ def setup(hass, config):
         # 订阅服务
         hass.services.async_register(DOMAIN, 'load', load_data)
     # 读取配置
-    web_url = config.get('web_url')
-    mqtt_host = config.get('mqtt_host')
+    cfg = config[DOMAIN]
+    web_url = cfg.get('web_url')
+    mqtt_host = cfg.get('mqtt_host')
+    # 显示插件信息
+    _LOGGER.info('''
+-------------------------------------------------------------------
+
+    小米平板【作者QQ：635147515】
+    
+    版本：''' + VERSION + '''    
+    
+-------------------------------------------------------------------''')
     # 监听广播
     socket_recv_thread = threading.Thread(target=udp_socket_recv_client,args=(mqtt_host, web_url))
     socket_recv_thread.start()
@@ -28,11 +42,12 @@ def udp_socket_recv_client(mqtt_host, web_url):
         recv_data, recv_addr = udp_socket.recvfrom(1024)
         host = recv_addr[0]
         data = json.loads(recv_data.decode('utf-8'))
+        print(data)
         api = data['api']
         global API_URL
         API_URL = api
         # 设置启动页面
-        res = requests.get(api + 'set?key=mqtt&value=' + mqtt_host)
+        res = requests.get(API_URL + 'set?key=mqtt&value=' + mqtt_host)
         print(res.json())
         set_web_url(web_url)
       
