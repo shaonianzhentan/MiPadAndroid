@@ -1,0 +1,9 @@
+load:
+  description: 加载网页链接
+  fields:
+    url:
+      name: 网页链接地址
+      description: 网页链接地址
+      example: 'https://ha.jiluxinqing.com'
+      selector:
+        text:
