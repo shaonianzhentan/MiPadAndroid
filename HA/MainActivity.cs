@@ -67,9 +67,9 @@ namespace HA
             webView.Settings.JavaScriptEnabled = true;
             webView.Settings.SetRenderPriority(Android.Webkit.WebSettings.RenderPriority.High);
             webView.ScrollbarFadingEnabled = true;
+            webView.SetWebViewClient(new PodWebViewClient());
 
             webView.LoadUrl("https://ha.jiluxinqing.com");
-
 
             HttpListener httpListenner;
             httpListenner = new HttpListener();
@@ -484,5 +484,17 @@ namespace HA
             }
         }
         #endregion
+    }
+
+    public class PodWebViewClient : WebViewClient
+
+    {
+        [System.Obsolete]
+        public override bool ShouldOverrideUrlLoading(WebView view, string url)
+
+        {
+            view.LoadUrl(url);
+            return true;
+        }
     }
 }

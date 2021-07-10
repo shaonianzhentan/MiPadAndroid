@@ -6,6 +6,7 @@
 
 ## 配置信息
 
+HA配置
 ```yaml
 mipad_android:
   host: 192.168.1.104
@@ -44,3 +45,8 @@ data:
 - 将`Debug`改为`Release`
 - 右键项目选择`存档`
 - `分发` - 临时 - 密钥为 `123456`
+
+
+### 关联项目
+
+- https://github.com/resoai/TileBoard

@@ -1,0 +1,25 @@
+xiao_mi_ping_ban_brightness_low:
+  alias: 把平板调暗=把小米平板调暗=把平板调暗一点
+  sequence:
+  - service: mqtt.publish
+    data:
+      topic: android/13e6af99/set
+      payload: 'brightness: 10'
+  mode: single
+xiao_mi_ping_ban_brightness_middle:
+  alias: 把平板调亮=把小米平板调亮=把平板调亮一点
+  sequence:
+  - service: mqtt.publish
+    data:
+      topic: android/13e6af99/set
+      payload: 'brightness: 200'
+  mode: single
+  icon: mdi:tablet-ipad
+xiao_mi_ping_ban_brightness_high:
+  alias: 把平板调到最亮=把小米平板调到最亮
+  sequence:
+  - service: mqtt.publish
+    data:
+      topic: android/13e6af99/set
+      payload: 'brightness: 255'
+  mode: single
