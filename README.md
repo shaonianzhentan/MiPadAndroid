@@ -4,6 +4,12 @@
 
 ---
 
+```yaml
+MiPadAndroid:
+  web_url: http://192.168.1.119/local/TileBoard/index.html
+  mqtt_host: 192.168.1.119
+```
+
 因为辣鸡小米平板1是使用的安卓4.4系统，然后不能使用内置webview打开HomeAssistant页面，
 也不能使用HomeAssistant的APP，所以这个辣鸡APP就产生了
 

@@ -52,53 +52,128 @@ namespace HA
             base.OnCreate(savedInstanceState);
             Xamarin.Essentials.Platform.Init(this, savedInstanceState);
             // Set our view from the "main" layout resource
-            // SetContentView(Resource.Layout.activity_main);
+            SetContentView(Resource.Layout.activity_main);
             audioManager = this.GetSystemService(Context.AudioService) as AudioManager;
             // 注册传感器
             SensorManager sensorManager = GetSystemService(Context.SensorService) as SensorManager;
             sensorManager.RegisterListener(this, sensorManager.GetDefaultSensor(SensorType.Light), SensorDelay.Fastest);
 
-            LinearLayout layout = new LinearLayout(this);
-            layout.Orientation = Android.Widget.Orientation.Vertical;
-            SetContentView(layout);
-            EditText editText = new EditText(this);
-            Button bt2 = new Button(this);
-            editText.Text = getIP();
-            editText.InputType = Android.Text.InputTypes.ClassNumber;
-            editText.SetSelection(editText.Text.Length);
-            bt2.Text = "连接MQTT";
-            bt2.Click += (s, ev) =>
-            {
-                this.ConnectMQTT(editText.Text.Trim());
-                bt2.Enabled = false;
-                bt2.Text = "连接成功，如果失败请退出重试";
-            };
-            layout.AddView(editText);
-            layout.AddView(bt2);
-            SetContentView(layout);
+            WebView webView = this.FindViewById<WebView>(Resource.Id.wv);
+            //系统默认会通过手机浏览器打开网页，为了能够直接通过WebView显示网页，则必须设置
+            webView.Settings.AllowFileAccess = true;
+            webView.Settings.AllowContentAccess = true;
+            webView.Settings.AllowFileAccessFromFileURLs = true;
+            webView.Settings.AllowUniversalAccessFromFileURLs = true;
+            webView.Settings.JavaScriptEnabled = true;
+            webView.Settings.SetRenderPriority(Android.Webkit.WebSettings.RenderPriority.High);
+            webView.ScrollbarFadingEnabled = true;
 
-            // 定时器（每5秒执行一次）
-            Timer timer = new Timer((state) =>
+            webView.LoadUrl("https://ha.jiluxinqing.com");
+
+
+            HttpListener httpListenner;
+            httpListenner = new HttpListener();
+            httpListenner.AuthenticationSchemes = AuthenticationSchemes.Anonymous;
+            httpListenner.Prefixes.Add($"http://{this.getIP()}:8124/");
+            httpListenner.Start();
+            new System.Threading.Thread(new ThreadStart(delegate
             {
-                // 在UI线程运行
-                this.RunOnUiThread(() =>
+                try
                 {
-                    // 判断客户端是否启动
-                    if (mqttClient != null)
+                    while (true)
                     {
-                        // 当前连接中，则进行上报状态
-                        if (mqttClient.IsConnected)
+                        try
                         {
-                            this.PublishConfig();
+                            HttpListenerContext context = httpListenner.GetContext();
+                            HttpListenerRequest request = context.Request;
+                            HttpListenerResponse response = context.Response;
+                            string path = request.Url.LocalPath;
+                            string key = request.QueryString["key"];
+                            string value = request.QueryString["value"];
+                            if (request.HttpMethod == "GET")
+                            {
+                            }
+                            Dictionary<string, object> dict = new Dictionary<string, object>();
+                            dict.Add(key, value);
+                            dict.Add("url_path", path);
+                            dict.Add("update_time", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+                            MainThread.BeginInvokeOnMainThread(() =>
+                            {
+                                switch (path)
+                                {
+                                    case "/set":
+                                        if (!string.IsNullOrEmpty(value))
+                                        {
+                                            value = System.Net.WebUtility.UrlDecode(value);
+                                        }
+                                        switch (key)
+                                        {
+                                            case "url":
+                                                webView.LoadUrl(value);
+                                                break;
+                                            case "mqtt":
+                                                if (mqttClient == null)
+                                                {
+                                                    this.ConnectMQTT(value);
+                                                    // 定时器（每5秒执行一次）
+                                                    Timer timer = new Timer((state) =>
+                                                    {
+                                                        // 当前连接中，则进行上报状态
+                                                        if (mqttClient.IsConnected)
+                                                        {
+                                                            this.PublishConfig();
+                                                        }
+                                                        else
+                                                        {
+                                                            // 客户端重连
+                                                            this.ConnectMQTT(value);
+                                                        }
+                                                    }, null, 0, 12000);
+                                                }
+                                                break;
+                                        }
+                                        break;
+                                    default:
+                                        dict.Add("status code", "404");
+                                        break;
+                                }
+                            });
+
+                            string responseString = JsonConvert.SerializeObject(dict);
+                            byte[] buffer = System.Text.Encoding.UTF8.GetBytes(responseString);
+                            //对客户端输出相应信息.
+                            response.ContentType = "application/json; charset=utf-8";
+                            response.ContentLength64 = buffer.Length;
+                            System.IO.Stream output = response.OutputStream;
+                            output.Write(buffer, 0, buffer.Length);
+                            //关闭输出流，释放相应资源
+                            output.Close();
                         }
-                        else
+                        catch (System.Exception ex)
                         {
-                            // 客户端重连
-                            this.ConnectMQTT(editText.Text.Trim());
+                            System.Console.WriteLine(ex);
                         }
+
                     }
-                });
-            }, null, 0, 12000);
+                }
+                catch (Exception)
+                {
+                    // httpListenner.Stop();
+                }
+            })).Start();
+
+            // 这里发送广播
+            SendInitMessage();
+        }
+
+        void SendInitMessage()
+        {
+            UdpClient udpClient = new UdpClient();
+            Dictionary<string, string> dict = new Dictionary<string, string>();
+            dict.Add("ip", this.getIP());
+            dict.Add("api", $"http://{this.getIP()}:8124/");
+            string data = JsonConvert.SerializeObject(dict);
+            udpClient.Send(System.Text.Encoding.UTF8.GetBytes(data), data.Length, new IPEndPoint(IPAddress.Broadcast, 9234));
         }
 
         async void ConnectMQTT(string host, int port = 1883)

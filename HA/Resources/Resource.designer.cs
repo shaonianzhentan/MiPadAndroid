@@ -3786,6 +3786,9 @@ namespace HA
 			// aapt resource value: 0x7F0800BD
 			public const int wrap_content = 2131230909;
 			
+			// aapt resource value: 0x7F0800BE
+			public const int wv = 2131230910;
+			
 			static Id()
 			{
 				global::Android.Runtime.ResourceIdManager.UpdateIdValues();
