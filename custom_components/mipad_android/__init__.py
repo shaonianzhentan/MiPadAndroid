@@ -18,8 +18,10 @@ def setup(hass, config):
         hass.services.async_register(DOMAIN, 'load', load_data)
     # 读取配置
     cfg = config[DOMAIN]
+    host = cfg.get('host', '')
     web_url = cfg.get('web_url')
     mqtt_host = cfg.get('mqtt_host')
+    set_api_url(host)
     # 显示插件信息
     _LOGGER.info('''
 -------------------------------------------------------------------
@@ -43,9 +45,8 @@ def udp_socket_recv_client(mqtt_host, web_url):
         host = recv_addr[0]
         data = json.loads(recv_data.decode('utf-8'))
         print(data)
-        api = data['api']
-        global API_URL
-        API_URL = api
+        ip = data['ip']
+        set_api_url(ip)
         # 设置启动页面
         res = requests.get(API_URL + 'set?key=mqtt&value=' + mqtt_host)
         print(res.json())
@@ -55,8 +56,17 @@ def udp_socket_recv_client(mqtt_host, web_url):
 def load_data(call):
     data = call.data
     url = data.get('url', '')
+    ip = data.get('ip', '')
     if url != '':
         set_web_url(url)
+    if ip != '':
+        set_api_url(ip)
+
+# 设置API地址
+def set_api_url(ip):
+    if ip != '':
+        global API_URL
+        API_URL = f'http://{ip}:8124/'
 
 # 设置页面
 def set_web_url(web_url):

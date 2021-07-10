@@ -4,7 +4,12 @@ load:
     url:
       name: 网页链接地址
       description: 网页链接地址
-      required: true
       example: 'https://ha.jiluxinqing.com'
+      selector:
+        text:
+    ip:
+      name: IP地址 
+      description: 小米平板IP地址
+      example: '192.168.1.111'
       selector:
         text:
