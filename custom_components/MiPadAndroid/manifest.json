@@ -1,0 +1,12 @@
+{
+    "domain": "MiPadAndroid",
+    "name": "MiPadAndroid",
+    "version": "1.0",
+    "config_flow": false,
+    "documentation": "https://github.com/shaonianzhentan/MiPadAndroid",
+    "requirements": [],
+    "dependencies": [],
+    "codeowners": [
+        "@shaonianzhentan"
+    ]
+}
