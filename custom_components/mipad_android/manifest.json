@@ -1,5 +1,5 @@
 {
-    "domain": "MiPadAndroid",
+    "domain": "mipad_android",
     "name": "MiPadAndroid",
     "version": "1.0",
     "config_flow": false,

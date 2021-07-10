@@ -5,7 +5,7 @@
 ---
 
 ```yaml
-MiPadAndroid:
+mipad_android:
   web_url: http://192.168.1.119/local/TileBoard/index.html
   mqtt_host: 192.168.1.119
 ```

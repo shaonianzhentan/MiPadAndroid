@@ -1,7 +1,7 @@
 import socket, threading, json, requests, urllib
 
 VERSION = '1.0'
-DOMAIN = 'MiPadAndroid'
+DOMAIN = 'mipad_android'
 ROOT_PATH = f'/{DOMAIN}-local'
 API_URL = None
 
