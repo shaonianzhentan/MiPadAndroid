@@ -10,7 +10,7 @@ HA配置
 ```yaml
 mipad_android:
   host: 192.168.1.104
-  web_url: http://192.168.1.119/local/TileBoard/index.html
+  web_url: http://192.168.1.119/local/TileBoard/index.html?r=TIMESTAMP
   mqtt_host: 192.168.1.119
 ```
 

@@ -1,4 +1,4 @@
-import socket, threading, json, requests, urllib, logging
+import socket, threading, json, requests, urllib, logging, time
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -19,7 +19,7 @@ def setup(hass, config):
     # 读取配置
     cfg = config[DOMAIN]
     host = cfg.get('host', '')
-    web_url = cfg.get('web_url')
+    web_url = cfg.get('web_url').replace('TIMESTAMP', str(int(time.time())))
     mqtt_host = cfg.get('mqtt_host')
     set_api_url(host)
     # 显示插件信息
