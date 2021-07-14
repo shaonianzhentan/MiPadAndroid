@@ -14,6 +14,12 @@ mipad_android:
   mqtt_host: 192.168.1.119
 ```
 
+使用自定义面板
+```yaml
+sensor.xiao_mi_ping_ban:
+  custom_ui_more_info: mipad-android
+```
+
 设置功能
 ```yaml
 service: mqtt.publish
@@ -39,6 +45,7 @@ data:
 - 显示手机相关信息
 - 控制音量和屏幕亮度
 - 语音识别
+- TTS文本转语音
 
 ## 发布方法
 
