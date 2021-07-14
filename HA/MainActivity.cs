@@ -111,6 +111,9 @@ namespace HA
                                             case "url":
                                                 webView.LoadUrl(value);
                                                 break;
+                                            case "float":
+                                                FloatWindow(value == "1");
+                                                break;
                                             case "mqtt":
                                                 if (mqttClient == null)
                                                 {
@@ -401,6 +404,49 @@ namespace HA
             string[] units = { "B", "KB", "MB", "GB", "TB" };
             return string.Format("{0:N2}", size) + units[index];
         }
+
+        #region
+        void FloatWindow(bool flags)
+        {
+            if (flags)
+            {
+                WindowManagerLayoutParams layoutParams = new WindowManagerLayoutParams();
+                // 判断当前Android系统版本
+                if (Build.VERSION.SdkInt >= BuildVersionCodes.M)
+                {
+                    layoutParams.Type = WindowManagerTypes.ApplicationOverlay;
+                }
+                else
+                {
+                    layoutParams.Type = WindowManagerTypes.SystemOverlay;
+                }
+                // layoutParams.Format = Format.Rgba8888;
+                layoutParams.Gravity = GravityFlags.Left | GravityFlags.Top;
+                layoutParams.Flags = WindowManagerFlags.NotTouchModal | WindowManagerFlags.NotFocusable | WindowManagerFlags.Fullscreen;
+                // 窗口的宽高和位置
+                DisplayMetrics dm = new DisplayMetrics();
+                WindowManager.DefaultDisplay.GetMetrics(dm);
+                layoutParams.Width = dm.WidthPixels;
+                layoutParams.Height = dm.HeightPixels;
+                layoutParams.X = 0;
+                layoutParams.Y = 0;
+                // 生成一个按钮
+                Button pixButton = new Button(this.ApplicationContext);
+                pixButton.Text = System.DateTime.Now.ToString("HH:mm:ss");
+                pixButton.SetBackgroundColor(Color.Black);
+                pixButton.SetTextColor(Color.White);
+                pixButton.Click += (s, e) =>
+                {
+                    WindowManager.RemoveView(pixButton);
+                };
+                WindowManager.AddView(pixButton, layoutParams);
+            }
+            else
+            {
+                
+            }            
+        }
+        #endregion
 
         #region 语音识别
         // 开始录音
