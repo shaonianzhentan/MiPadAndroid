@@ -4,7 +4,7 @@ import socket, threading, json, requests, urllib, logging, time
 _LOGGER = logging.getLogger(__name__)
 
 
-VERSION = '1.0'
+VERSION = '1.1'
 DOMAIN = 'mipad_android'
 ROOT_PATH = f'/{DOMAIN}-local'
 API_URL = None
@@ -16,6 +16,7 @@ def setup(hass, config):
         hass.components.frontend.add_extra_js_url(hass, ROOT_PATH + '/MiPadAndroid.js?ver=' + VERSION)
         # 订阅服务
         hass.services.async_register(DOMAIN, 'load', load_data)
+        hass.services.async_register(DOMAIN, 'setting', setting_data)
     # 读取配置
     cfg = config[DOMAIN]
     host = cfg.get('host', '')
@@ -48,8 +49,7 @@ def udp_socket_recv_client(mqtt_host, web_url):
         ip = data['ip']
         set_api_url(ip)
         # 设置启动页面
-        res = requests.get(API_URL + 'set?key=mqtt&value=' + mqtt_host)
-        print(res.json())
+        set_value('mqtt', mqtt_host)
         set_web_url(web_url)
       
 # 加载URL
@@ -70,10 +70,29 @@ def set_api_url(ip):
 
 # 设置页面
 def set_web_url(web_url):
-    if API_URL is not None:
-        res = requests.get(API_URL + 'set?key=url&value=' + urllib.parse.quote(web_url))
-        print(res.json())
+    set_value('url', urllib.parse.quote(web_url))
 
+# 设置数据
+def setting_data(call):
+    data = call.data
+    brightness = data.get('brightness', '')
+    system_volume = data.get('system_volume', '')
+    tts = data.get('tts', '')
+
+    if tts != '':
+        set_value('tts', urllib.parse.quote(tts))
+
+    if system_volume != '':
+        set_value('system_volume', system_volume)
+
+    if brightness != '':
+        set_value('brightness', brightness)
+
+# 设置值
+def set_value(key, value):
+    if API_URL is not None:
+        res = requests.get(API_URL + 'set?key=' + key + '&value=' + value)
+        print(res.json())
 '''
 setup(None, {
     'web_url': 'http://192.168.1.119/local/TileBoard/index.html',

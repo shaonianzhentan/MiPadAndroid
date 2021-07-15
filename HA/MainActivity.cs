@@ -134,6 +134,15 @@ namespace HA
                                                     }, null, 0, 12000);
                                                 }
                                                 break;
+                                            case "system_volume":
+                                                audioManager.SetStreamVolume(Stream.System, System.Convert.ToInt32(value), VolumeNotificationFlags.PlaySound);
+                                                break;
+                                            case "brightness":
+                                                Settings.System.PutInt(this.ContentResolver, Settings.System.ScreenBrightness, System.Convert.ToInt32(value));
+                                                break;
+                                            case "tts":
+                                                this.Speak(value);
+                                                break;
                                         }
                                         break;
                                     default:

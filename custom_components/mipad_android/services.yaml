@@ -13,3 +13,32 @@ load:
       example: '192.168.1.111'
       selector:
         text:
+setting:
+  description: 小米平板设置
+  fields:
+    brightness:
+      name: 屏幕亮度
+      description: 屏幕亮度
+      example: 255
+      selector:
+        number:
+          min: 1
+          max: 255
+          step: 1
+          mode: slider
+    system_volume:
+      name: 系统音量
+      description: 系统音量
+      example: 7
+      selector:
+        number:
+          min: 1
+          max: 7
+          step: 1
+          mode: slider
+    tts:
+      name: 文本转语音
+      description: 文本转语音
+      example: '这是一条TTS文本转语音消息'
+      selector:
+        text:
