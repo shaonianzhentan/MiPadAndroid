@@ -1,5 +1,5 @@
 import socket, threading, json, requests, urllib, logging, time
-
+from homeassistant.helpers import template
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -8,10 +8,13 @@ VERSION = '1.1'
 DOMAIN = 'mipad_android'
 ROOT_PATH = f'/{DOMAIN}-local'
 API_URL = None
+HASS = None
 
 def setup(hass, config):
     # 注册静态目录
     if hass is not None:
+        global HASS
+        HASS = hass
         hass.http.register_static_path(ROOT_PATH, hass.config.path(f'custom_components/{DOMAIN}/local'), False)
         hass.components.frontend.add_extra_js_url(hass, ROOT_PATH + '/MiPadAndroid.js?ver=' + VERSION)
         # 订阅服务
@@ -80,7 +83,7 @@ def setting_data(call):
     tts = data.get('tts', '')
 
     if tts != '':
-        set_value('tts', urllib.parse.quote(tts))
+        set_value('tts', urllib.parse.quote(template_message(tts)))
 
     if system_volume != '':
         set_value('system_volume', system_volume)
@@ -93,6 +96,12 @@ def set_value(key, value):
     if API_URL is not None:
         res = requests.get(API_URL + 'set?key=' + key + '&value=' + value)
         print(res.json())
+
+# 解析模板
+def template_message(_message):        
+    tpl = template.Template(_message, HASS)
+    _message = tpl.async_render(None)
+    return _message
 '''
 setup(None, {
     'web_url': 'http://192.168.1.119/local/TileBoard/index.html',

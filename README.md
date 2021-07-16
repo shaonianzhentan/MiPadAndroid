@@ -32,6 +32,25 @@ data:
   payload: 'system_volume: 7'
 ```
 
+## 模板示例
+
+判断当前设置是否打开
+```js
+{%- set filterDomain = ["light", "switch", "media_player"] -%}
+{%- set filterState = ["on", "playing"] -%}
+{% set ns = namespace(found=false) %}
+{%- for state in states -%}
+  {%- if state.state in filterState and state.domain in filterDomain -%}
+       {%- set ns.found = true -%} {{ state.name }},
+  {%- endif %}
+{%- endfor %}
+{%- if ns.found -%}
+  还是打开的哦
+{%- else %}
+  当前所有设备已经关闭
+{%- endif %}
+```
+
 因为辣鸡小米平板1是使用的安卓4.4系统，然后不能使用内置webview打开HomeAssistant页面，
 也不能使用HomeAssistant的APP，所以这个辣鸡APP就产生了
 
