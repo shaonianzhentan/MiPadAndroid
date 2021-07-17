@@ -128,7 +128,7 @@ class HassGateView(HomeAssistantView):
         if 'text' in request.query:
             text = request.query['text']
             # 触发事件
-            hass.services.call('conversation', 'process', {'text': text })
+            hass.async_create_task(hass.services.async_call('conversation', 'process', {'text': text}))
             return self.json({'code': '0', 'msg': text})
         else:
             return self.json({'code': '401', 'msg': '参数不正确'})
