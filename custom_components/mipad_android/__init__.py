@@ -1,5 +1,8 @@
 import socket, threading, json, requests, urllib, logging, time
+from homeassistant.components.http import HomeAssistantView
 from homeassistant.helpers import template
+from homeassistant.helpers.network import get_url
+from .shaonianzhentan import get_mac_address_key
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -7,7 +10,7 @@ _LOGGER = logging.getLogger(__name__)
 VERSION = '1.1'
 DOMAIN = 'mipad_android'
 ROOT_PATH = f'/{DOMAIN}-local'
-API_URL = None
+DOMAIN_API = f'/{DOMAIN}-api-{get_mac_address_key()}'
 HASS = None
 
 def setup(hass, config):
@@ -20,6 +23,8 @@ def setup(hass, config):
         # 订阅服务
         hass.services.async_register(DOMAIN, 'load', load_data)
         hass.services.async_register(DOMAIN, 'setting', setting_data)
+        # 注册事件网关
+        hass.http.register_view(HassGateView)
     # 读取配置
     cfg = config[DOMAIN]
     host = cfg.get('host', '')
@@ -32,7 +37,9 @@ def setup(hass, config):
 
     小米平板【作者QQ：635147515】
     
-    版本：''' + VERSION + '''    
+    版本：''' + VERSION + '''
+
+    API：''' + DOMAIN_API + '''
     
 -------------------------------------------------------------------''')
     # 监听广播
@@ -53,6 +60,7 @@ def udp_socket_recv_client(mqtt_host, web_url):
         set_api_url(ip)
         # 设置启动页面
         set_value('mqtt', mqtt_host)
+        set_value('ha_api', get_url(HASS).strip('/') + DOMAIN_API)
         set_web_url(web_url)
       
 # 加载URL
@@ -106,6 +114,23 @@ def template_message(_message):
     tpl = template.Template(_message, HASS)
     _message = tpl.async_render(None)
     return _message
+
+class HassGateView(HomeAssistantView):
+
+    url = DOMAIN_API
+    name = DOMAIN
+    requires_auth = False
+    
+    async def get(self, request):
+        # 这里进行重定向
+        hass = request.app["hass"]
+        if 'text' in request.query:
+            text = request.query['text']
+            # 触发事件
+            hass.services.call('conversation', 'process', {'text': text })
+            return self.json({'code': '0', 'msg': text})
+        else:
+            return self.json({'code': '401', 'msg': '参数不正确'})
 '''
 setup(None, {
     'web_url': 'http://192.168.1.119/local/TileBoard/index.html',

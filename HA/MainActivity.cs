@@ -33,6 +33,7 @@ using Android.Net.Wifi;
 using YamlDotNet.Serialization;
 using System.Net;
 using Android.Net;
+using Android.Speech;
 
 namespace HA
 {
@@ -41,12 +42,15 @@ namespace HA
     {
         AudioManager audioManager = null;
         IMqttClient mqttClient = null;
+        HttpListener httpListenner = null;
         Button floatButton = null;
         string topic = $"android/{Android.OS.Build.Serial}/".ToLower();
-        bool isStartRecord = false;
         float LightSensor = 0;
         string debugTime = "";
         string debugMsg = "";
+        // 语音识别
+        bool isStartRecord = false;
+        int VOICE = 1;
 
         protected override void OnCreate(Bundle savedInstanceState)
         {
@@ -69,10 +73,7 @@ namespace HA
             webView.Settings.SetRenderPriority(Android.Webkit.WebSettings.RenderPriority.High);
             webView.ScrollbarFadingEnabled = true;
             webView.SetWebViewClient(new PodWebViewClient());
-
             webView.LoadUrl("https://ha.jiluxinqing.com");
-
-            HttpListener httpListenner;
             httpListenner = new HttpListener();
             httpListenner.AuthenticationSchemes = AuthenticationSchemes.Anonymous;
             httpListenner.Prefixes.Add($"http://{this.getIP()}:8124/");
@@ -144,6 +145,9 @@ namespace HA
                                             case "tts":
                                                 this.Speak(value);
                                                 break;
+                                            case "stt":
+                                                this.StartRecord();
+                                                break;
                                         }
                                         break;
                                     default:
@@ -174,7 +178,6 @@ namespace HA
                     // httpListenner.Stop();
                 }
             })).Start();
-
             // 这里发送广播
             SendInitMessage();
             // 浮动窗口
@@ -265,21 +268,6 @@ namespace HA
                             audioManager.SetStreamVolume(Stream.System, System.Convert.ToInt32(dict["system_volume"]), VolumeNotificationFlags.PlaySound);
                             this.PublishInfo($"系统音量：{dict["system_volume"]}");
                         }
-                        // 语音识别
-                        if (dict.ContainsKey("voice"))
-                        {
-                            // 提示方式
-                            string tips = dict.ContainsKey("tips") ? dict["tips"].ToString() : "";
-                            // 录音时长
-                            int voiceTime = 5;
-                            if (dict.ContainsKey("voice_time"))
-                            {
-                                voiceTime = System.Convert.ToInt32(dict["voice_time"]);
-                                if (voiceTime > 5) voiceTime = 5;
-                                if (voiceTime < 2) voiceTime = 2;
-                            }
-                            this.StartRecord(tips, dict["voice"].ToString(), voiceTime);
-                        }
                     }
                     catch (Exception ex)
                     {
@@ -354,6 +342,7 @@ namespace HA
             string[] batteryState = new string[] { "Unknown", "Charging", "Discharging", "Full", "NotCharging", "NotPresent" };
 
             dict.Add("设置主题", $"{topic}set");
+            dict.Add("语音识别", $"{topic}stt");
             dict.Add("调试时间", debugTime);
             dict.Add("调试消息", debugMsg);
             
@@ -475,66 +464,48 @@ namespace HA
 
         #region 语音识别
         // 开始录音
-        void StartRecord(string tips, string url, int voiceTime)
+        void StartRecord()
         {
             if (isStartRecord) return;
             isStartRecord = true;
-            
-            if (tips == "play")
+
+            var voiceIntent = new Intent(RecognizerIntent.ActionRecognizeSpeech);
+            voiceIntent.PutExtra(RecognizerIntent.ExtraLanguageModel, RecognizerIntent.LanguageModelFreeForm);
+            voiceIntent.PutExtra(RecognizerIntent.ExtraPrompt, "测试");
+            voiceIntent.PutExtra(RecognizerIntent.ExtraSpeechInputCompleteSilenceLengthMillis, 1500);
+            voiceIntent.PutExtra(RecognizerIntent.ExtraSpeechInputPossiblyCompleteSilenceLengthMillis, 1500);
+            voiceIntent.PutExtra(RecognizerIntent.ExtraSpeechInputMinimumLengthMillis, 15000);
+            voiceIntent.PutExtra(RecognizerIntent.ExtraMaxResults, 1);
+            voiceIntent.PutExtra(RecognizerIntent.ExtraLanguage, Java.Util.Locale.Default);
+            // 中止监听
+            httpListenner.Stop();
+            StartActivityForResult(voiceIntent, VOICE);
+        }
+
+        protected override void OnActivityResult(int requestCode, Result resultVal, Intent data)
+        {
+            if (requestCode == VOICE)
             {
-                Ringtone rt = RingtoneManager.GetRingtone(this, RingtoneManager.GetDefaultUri(RingtoneType.Notification));
-                rt.Play();
-            }
-            else
-            {
-                // 震动一下
-                Xamarin.Essentials.Vibration.Vibrate(500);
-            }
-            try
-            {
-                int bufferSizeInBytes = AudioRecord.GetMinBufferSize(16000, ChannelIn.Mono, Encoding.Pcm16bit);
-                AudioRecord audioRecord = new AudioRecord(AudioSource.Mic, 16000, ChannelIn.Mono, Encoding.Pcm16bit, bufferSizeInBytes);
-                // 开始录音
-                audioRecord.StartRecording();
-                int readsize = 0;
-                byte[] audiodata = new byte[bufferSizeInBytes];
-                // 创建pcm文件
-                Java.IO.File audioFile = Java.IO.File.CreateTempFile("record_", ".pcm");
-                string audioFilePath = audioFile.AbsolutePath;
-                Java.IO.FileOutputStream fos = new Java.IO.FileOutputStream(audioFilePath);
-                // 当前时间
-                System.DateTime today = System.DateTime.Now;
-                // 录音5秒
-                while (System.DateTime.Now.Subtract(today).TotalSeconds < voiceTime)
+                if (resultVal == Result.Ok)
                 {
-                    readsize = audioRecord.Read(audiodata, 0, bufferSizeInBytes);
-                    if (-3 != readsize)
+                    var matches = data.GetStringArrayListExtra(RecognizerIntent.ExtraResults);
+                    if (matches.Count != 0)
                     {
-                        try
+                        string msg = matches[0];
+                        System.Console.WriteLine(msg);
+                        if (mqttClient != null)
                         {
-                            fos.Write(audiodata);
-                        }
-                        catch (Exception ioEx)
-                        {
-                            // log(ioEx.Message);
+                            this.PublishInfo(msg);
+                            mqttClient.PublishAsync($"{topic}stt", msg);
                         }
                     }
+                    else
+                    {
+                        System.Console.WriteLine("No speech was recognised");
+                    }
                 }
-                MainThread.BeginInvokeOnMainThread(() =>
-                {
-                    Xamarin.Essentials.Vibration.Vibrate(200);
-                    // 将文件上传到指定地址
-                    string res = HttpHelper.HttpUploadFile(url, audioFilePath, null);
-                    this.PublishInfo(res);
-                });                
-            }
-            catch (Exception ex)
-            {
-                this.PublishInfo(ex.Message);
-            }
-            finally
-            {
                 isStartRecord = false;
+                base.OnActivityResult(requestCode, resultVal, data);
             }
         }
 
