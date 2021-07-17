@@ -49,6 +49,7 @@ namespace HA
         string debugTime = "";
         string debugMsg = "";
         string ha_api = "";
+        string web_url = "https://ha.jiluxinqing.com";
         // 语音识别
         bool isStartRecord = false;
         int VOICE = 1;
@@ -57,6 +58,12 @@ namespace HA
         {
             base.OnCreate(savedInstanceState);
             Xamarin.Essentials.Platform.Init(this, savedInstanceState);
+
+            if (savedInstanceState != null)
+            {
+                ha_api = savedInstanceState.GetString("ha_api", "");
+                web_url = savedInstanceState.GetString("web_url");
+            }
             // Set our view from the "main" layout resource
             SetContentView(Resource.Layout.activity_main);
             audioManager = this.GetSystemService(Context.AudioService) as AudioManager;
@@ -74,10 +81,11 @@ namespace HA
             webView.Settings.SetRenderPriority(Android.Webkit.WebSettings.RenderPriority.High);
             webView.ScrollbarFadingEnabled = true;
             webView.SetWebViewClient(new PodWebViewClient());
-            webView.LoadUrl("https://ha.jiluxinqing.com");
+            webView.LoadUrl(web_url);
             httpListenner = new HttpListener();
             httpListenner.AuthenticationSchemes = AuthenticationSchemes.Anonymous;
             string url = $"http://{this.getIP()}:8124/";
+            httpListenner.Prefixes.Add(url);
             httpListenner.Start();
             new System.Threading.Thread(new ThreadStart(delegate
             {
@@ -112,6 +120,7 @@ namespace HA
                                         switch (key)
                                         {
                                             case "url":
+                                                web_url = value;
                                                 webView.LoadUrl(value);
                                                 break;
                                             case "float":
@@ -187,6 +196,15 @@ namespace HA
             // 浮动窗口
             FloatWindow(true);
         }
+
+
+        protected override void OnSaveInstanceState(Bundle outState)
+        {
+            outState.PutString("ha_api", ha_api);
+            outState.PutString("web_url", web_url);
+            base.OnSaveInstanceState(outState);
+        }
+
 
         void SendInitMessage()
         {
@@ -472,8 +490,6 @@ namespace HA
         {
             if (isStartRecord) return;
             isStartRecord = true;
-            // 中止监听
-            httpListenner.Stop();
 
             var voiceIntent = new Intent(RecognizerIntent.ActionRecognizeSpeech);
             voiceIntent.PutExtra(RecognizerIntent.ExtraLanguageModel, RecognizerIntent.LanguageModelFreeForm);
@@ -488,8 +504,11 @@ namespace HA
 
         protected override void OnPause()
         {
-            httpListenner.Stop();
-            httpListenner.Close();
+            if (httpListenner.IsListening)
+            {
+                httpListenner.Stop();
+            }
+            base.OnPause();
         }
 
         protected override void OnActivityResult(int requestCode, Result resultVal, Intent data)
@@ -502,7 +521,6 @@ namespace HA
                     if (matches.Count != 0)
                     {
                         string msg = matches[0];
-                        ha_api = data.GetStringExtra(RecognizerIntent.ExtraPrompt);
                         WebClient wc = new WebClient();
                         byte[] bResponse = wc.DownloadData(ha_api + "?text=" + Uri.Encode(msg));
                         string strResponse =System.Text.Encoding.UTF8.GetString(bResponse);

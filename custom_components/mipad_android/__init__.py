@@ -72,10 +72,13 @@ def load_data(call):
     data = call.data
     url = data.get('url', '')
     ip = data.get('ip', '')
+    stt = data.get('stt', '')
     if url != '':
         set_web_url(url)
     if ip != '':
         set_api_url(ip)
+    if stt != '':
+        set_value('stt', stt)
 
 # 设置API地址
 def set_api_url(ip):
