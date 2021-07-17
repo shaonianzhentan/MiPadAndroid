@@ -7,7 +7,7 @@ from .shaonianzhentan import get_mac_address_key
 _LOGGER = logging.getLogger(__name__)
 
 
-VERSION = '1.1'
+VERSION = '1.2'
 DOMAIN = 'mipad_android'
 ROOT_PATH = f'/{DOMAIN}-local'
 DOMAIN_API = f'/{DOMAIN}-api-{get_mac_address_key()}'
@@ -53,17 +53,20 @@ def udp_socket_recv_client(mqtt_host, web_url):
     udp_socket = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
     udp_socket.bind(("", 9234))
     while True:
-        recv_data, recv_addr = udp_socket.recvfrom(1024)
-        host = recv_addr[0]
-        data = json.loads(recv_data.decode('utf-8'))
-        print(data)
-        ip = data['ip']
-        set_api_url(ip)
-        # 设置启动页面
-        set_value('mqtt', mqtt_host)
-        set_value('ha_api', get_url(HASS).strip('/') + DOMAIN_API)
-        set_web_url(web_url)
-      
+        try:
+            recv_data, recv_addr = udp_socket.recvfrom(1024)
+            host = recv_addr[0]
+            data = json.loads(recv_data.decode('utf-8'))
+            print(data)
+            ip = data['ip']
+            set_api_url(ip)
+            # 设置启动页面
+            set_value('mqtt', mqtt_host)
+            set_value('ha_api', get_url(HASS).strip('/') + DOMAIN_API)
+            set_web_url(web_url)
+        except Exception as ex:
+            print(ex)
+
 # 加载URL
 def load_data(call):
     data = call.data

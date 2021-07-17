@@ -48,6 +48,7 @@ namespace HA
         float LightSensor = 0;
         string debugTime = "";
         string debugMsg = "";
+        string ha_api = "";
         // 语音识别
         bool isStartRecord = false;
         int VOICE = 1;
@@ -76,7 +77,7 @@ namespace HA
             webView.LoadUrl("https://ha.jiluxinqing.com");
             httpListenner = new HttpListener();
             httpListenner.AuthenticationSchemes = AuthenticationSchemes.Anonymous;
-            httpListenner.Prefixes.Add($"http://{this.getIP()}:8124/");
+            string url = $"http://{this.getIP()}:8124/";
             httpListenner.Start();
             new System.Threading.Thread(new ThreadStart(delegate
             {
@@ -144,6 +145,9 @@ namespace HA
                                                 break;
                                             case "tts":
                                                 this.Speak(value);
+                                                break;
+                                            case "ha_api":
+                                                ha_api = value;
                                                 break;
                                             case "stt":
                                                 this.StartRecord();
@@ -468,18 +472,24 @@ namespace HA
         {
             if (isStartRecord) return;
             isStartRecord = true;
+            // 中止监听
+            httpListenner.Stop();
 
             var voiceIntent = new Intent(RecognizerIntent.ActionRecognizeSpeech);
             voiceIntent.PutExtra(RecognizerIntent.ExtraLanguageModel, RecognizerIntent.LanguageModelFreeForm);
-            voiceIntent.PutExtra(RecognizerIntent.ExtraPrompt, "测试");
+            voiceIntent.PutExtra(RecognizerIntent.ExtraPrompt, ha_api);
             voiceIntent.PutExtra(RecognizerIntent.ExtraSpeechInputCompleteSilenceLengthMillis, 1500);
             voiceIntent.PutExtra(RecognizerIntent.ExtraSpeechInputPossiblyCompleteSilenceLengthMillis, 1500);
             voiceIntent.PutExtra(RecognizerIntent.ExtraSpeechInputMinimumLengthMillis, 15000);
             voiceIntent.PutExtra(RecognizerIntent.ExtraMaxResults, 1);
             voiceIntent.PutExtra(RecognizerIntent.ExtraLanguage, Java.Util.Locale.Default);
-            // 中止监听
-            httpListenner.Stop();
             StartActivityForResult(voiceIntent, VOICE);
+        }
+
+        protected override void OnPause()
+        {
+            httpListenner.Stop();
+            httpListenner.Close();
         }
 
         protected override void OnActivityResult(int requestCode, Result resultVal, Intent data)
@@ -492,19 +502,17 @@ namespace HA
                     if (matches.Count != 0)
                     {
                         string msg = matches[0];
-                        System.Console.WriteLine(msg);
-                        if (mqttClient != null)
-                        {
-                            this.PublishInfo(msg);
-                            mqttClient.PublishAsync($"{topic}stt", msg);
-                        }
+                        ha_api = data.GetStringExtra(RecognizerIntent.ExtraPrompt);
+                        WebClient wc = new WebClient();
+                        byte[] bResponse = wc.DownloadData(ha_api + "?text=" + Uri.Encode(msg));
+                        string strResponse =System.Text.Encoding.UTF8.GetString(bResponse);
+                        System.Console.WriteLine(strResponse);
                     }
                     else
                     {
                         System.Console.WriteLine("No speech was recognised");
                     }
                 }
-                isStartRecord = false;
                 base.OnActivityResult(requestCode, resultVal, data);
             }
         }
