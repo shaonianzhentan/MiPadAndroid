@@ -81,6 +81,7 @@ def setting_data(call):
     brightness = data.get('brightness', '')
     system_volume = data.get('system_volume', '')
     tts = data.get('tts', '')
+    lock = data.get('lock', '')
 
     if tts != '':
         set_value('tts', urllib.parse.quote(template_message(tts)))
@@ -88,13 +89,16 @@ def setting_data(call):
     if system_volume != '':
         set_value('system_volume', system_volume)
 
+    if lock != '':
+        set_value('float', lock)
+
     if brightness != '':
         set_value('brightness', brightness)
 
 # 设置值
 def set_value(key, value):
     if API_URL is not None:
-        res = requests.get(API_URL + 'set?key=' + key + '&value=' + value)
+        res = requests.get(API_URL + 'set?key=' + key + '&value=' + str(value))
         print(res.json())
 
 # 解析模板

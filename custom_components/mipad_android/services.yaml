@@ -42,3 +42,13 @@ setting:
       example: '这是一条TTS文本转语音消息'
       selector:
         text:
+    lock:
+      name: 熄屏
+      description: 屏幕点亮或熄屏
+      example: 1
+      selector:
+        number:
+          min: 0
+          max: 1
+          step: 1
+          mode: slider

@@ -41,6 +41,7 @@ namespace HA
     {
         AudioManager audioManager = null;
         IMqttClient mqttClient = null;
+        Button floatButton = null;
         string topic = $"android/{Android.OS.Build.Serial}/".ToLower();
         bool isStartRecord = false;
         float LightSensor = 0;
@@ -176,6 +177,8 @@ namespace HA
 
             // 这里发送广播
             SendInitMessage();
+            // 浮动窗口
+            FloatWindow(true);
         }
 
         void SendInitMessage()
@@ -417,6 +420,20 @@ namespace HA
         #region
         void FloatWindow(bool flags)
         {
+            if (floatButton != null)
+            {
+                if (flags)
+                {
+                    floatButton.Visibility = ViewStates.Visible;
+                    Settings.System.PutInt(this.ContentResolver, Settings.System.ScreenBrightness, 1);
+                }
+                else
+                {
+                    floatButton.Visibility = ViewStates.Invisible;
+                    Settings.System.PutInt(this.ContentResolver, Settings.System.ScreenBrightness, 125);
+                }
+                return;
+            }
             if (flags)
             {
                 WindowManagerLayoutParams layoutParams = new WindowManagerLayoutParams();
@@ -427,9 +444,9 @@ namespace HA
                 }
                 else
                 {
-                    layoutParams.Type = WindowManagerTypes.SystemOverlay;
+                    layoutParams.Type = WindowManagerTypes.Application;
                 }
-                // layoutParams.Format = Format.Rgba8888;
+                layoutParams.Format = Format.Rgba8888;
                 layoutParams.Gravity = GravityFlags.Left | GravityFlags.Top;
                 layoutParams.Flags = WindowManagerFlags.NotTouchModal | WindowManagerFlags.NotFocusable | WindowManagerFlags.Fullscreen;
                 // 窗口的宽高和位置
@@ -440,20 +457,19 @@ namespace HA
                 layoutParams.X = 0;
                 layoutParams.Y = 0;
                 // 生成一个按钮
-                Button pixButton = new Button(this.ApplicationContext);
-                pixButton.Text = System.DateTime.Now.ToString("HH:mm:ss");
-                pixButton.SetBackgroundColor(Color.Black);
-                pixButton.SetTextColor(Color.White);
-                pixButton.Click += (s, e) =>
+                floatButton = new Button(this.ApplicationContext);
+                // floatButton.Text = System.DateTime.Now.ToString("HH:mm:ss");
+                floatButton.Text = "";
+                floatButton.SetBackgroundColor(Color.Black);
+                floatButton.SetTextColor(Color.White);
+                floatButton.Visibility = ViewStates.Invisible;
+                floatButton.Click += (s, e) =>
                 {
-                    WindowManager.RemoveView(pixButton);
+                    floatButton.Visibility = ViewStates.Invisible;
+                    Settings.System.PutInt(this.ContentResolver, Settings.System.ScreenBrightness, 125);
                 };
-                WindowManager.AddView(pixButton, layoutParams);
-            }
-            else
-            {
-                
-            }            
+                WindowManager.AddView(floatButton, layoutParams);
+            }    
         }
         #endregion
 
@@ -539,6 +555,7 @@ namespace HA
             }
         }
         #endregion
+
     }
 
     public class PodWebViewClient : WebViewClient
