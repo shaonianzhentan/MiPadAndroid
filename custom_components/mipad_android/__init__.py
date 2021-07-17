@@ -28,7 +28,7 @@ def setup(hass, config):
     # 读取配置
     cfg = config[DOMAIN]
     host = cfg.get('host', '')
-    web_url = cfg.get('web_url').replace('TIMESTAMP', str(int(time.time())))
+    web_url = cfg.get('web_url', '').replace('TIMESTAMP', str(int(time.time())))
     mqtt_host = cfg.get('mqtt_host')
     set_api_url(host)
     # 显示插件信息
@@ -39,12 +39,13 @@ def setup(hass, config):
     
     版本：''' + VERSION + '''
 
-    API：''' + DOMAIN_API + '''
+    API：''' + get_url(hass).strip('/') + DOMAIN_API + '''
     
 -------------------------------------------------------------------''')
     # 监听广播
-    socket_recv_thread = threading.Thread(target=udp_socket_recv_client,args=(mqtt_host, web_url))
-    socket_recv_thread.start()
+    if mqtt_host != '':
+        socket_recv_thread = threading.Thread(target=udp_socket_recv_client,args=(mqtt_host, web_url))
+        socket_recv_thread.start()
     return True
 
 # 接收信息
