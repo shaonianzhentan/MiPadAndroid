@@ -66,10 +66,6 @@ namespace HA
             }
             // Set our view from the "main" layout resource
             SetContentView(Resource.Layout.activity_main);
-            audioManager = this.GetSystemService(Context.AudioService) as AudioManager;
-            // 注册传感器
-            SensorManager sensorManager = GetSystemService(Context.SensorService) as SensorManager;
-            sensorManager.RegisterListener(this, sensorManager.GetDefaultSensor(SensorType.Light), SensorDelay.Fastest);
 
             WebView webView = this.FindViewById<WebView>(Resource.Id.wv);
             //系统默认会通过手机浏览器打开网页，为了能够直接通过WebView显示网页，则必须设置
@@ -82,6 +78,12 @@ namespace HA
             webView.ScrollbarFadingEnabled = true;
             webView.SetWebViewClient(new PodWebViewClient());
             webView.LoadUrl(web_url);
+
+            audioManager = this.GetSystemService(Context.AudioService) as AudioManager;
+            // 注册传感器
+            SensorManager sensorManager = GetSystemService(Context.SensorService) as SensorManager;
+            sensorManager.RegisterListener(this, sensorManager.GetDefaultSensor(SensorType.Light), SensorDelay.Fastest);
+
             httpListenner = new HttpListener();
             httpListenner.AuthenticationSchemes = AuthenticationSchemes.Anonymous;
             string url = $"http://{this.getIP()}:8124/";
@@ -120,8 +122,11 @@ namespace HA
                                         switch (key)
                                         {
                                             case "url":
-                                                web_url = value;
-                                                webView.LoadUrl(value);
+                                                if (web_url != value)
+                                                {
+                                                    web_url = value;
+                                                    webView.LoadUrl(value);
+                                                }
                                                 break;
                                             case "float":
                                                 FloatWindow(value == "1");
