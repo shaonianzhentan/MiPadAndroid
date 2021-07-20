@@ -225,7 +225,9 @@ namespace HA
         {
             string clientId = System.Guid.NewGuid().ToString();
             // 设置主题
-            string topic_set = $"{topic}set";            
+            string topic_set = $"{topic}set";
+            string topic_command = $"{topic}command";
+            string topic_brightness = $"{topic}brightness";
             // 定义配置信息
             var options = new MqttClientOptionsBuilder()
                 .WithClientId(clientId)
@@ -240,6 +242,8 @@ namespace HA
             {
                 // 订阅设置主题
                 mqttClient.SubscribeAsync(topic_set);
+                mqttClient.SubscribeAsync(topic_command);
+                mqttClient.SubscribeAsync(topic_brightness);
                 // 发送连接状态
                 this.PublishInfo("连接成功");
             });
@@ -255,8 +259,12 @@ namespace HA
                 string topic = e.ApplicationMessage.Topic;
                 // 获取当前消息内容
                 string payload = e.ApplicationMessage.Payload == null ? "" : System.Text.Encoding.UTF8.GetString(e.ApplicationMessage.Payload);
+                if (System.String.IsNullOrEmpty(payload))
+                {
+                    return;
+                }
                 // 判断是否为设置主题
-                if (topic == topic_set && !System.String.IsNullOrEmpty(payload))
+                if (topic == topic_set)
                 {
                     // 这里进行数据设置
                     try
@@ -301,6 +309,14 @@ namespace HA
                         this.PublishInfo(ex.Message);
                     }
                 }
+                else if (topic == topic_command)
+                {
+                    this.FloatWindow(payload == "ON");
+                }
+                else if (topic == topic_brightness)
+                {
+                    Settings.System.PutInt(this.ContentResolver, Settings.System.ScreenBrightness, System.Convert.ToInt32(payload));
+                }
             });
             // 开始连接...
             await mqttClient.ConnectAsync(options.Build(), CancellationToken.None);
@@ -318,6 +334,8 @@ namespace HA
             dict.Add("icon", "mdi:android");
             dict.Add("state_topic", $"{topic}state");
             dict.Add("json_attributes_topic", $"{topic}attributes");
+            dict.Add("brightness_command_topic", $"{topic}brightness");
+            dict.Add("command_topic", $"{topic}command");
             dict.Add("device_class", "battery");
             dict.Add("unit_of_measurement", "%");
             // 实体唯一ID
@@ -328,11 +346,11 @@ namespace HA
                 identifiers = Android.OS.Build.Id,
                 manufacturer = Android.OS.Build.Manufacturer,
                 model = Android.OS.Build.Model,
-                name = Android.OS.Build.Model,
+                name = "MIPadAndroid",
                 sw_version = Android.OS.Build.RadioVersion
             });
             // 上报信息
-            mqttClient.PublishAsync($"homeassistant/sensor/{unique_id}/config", JsonConvert.SerializeObject(dict));
+            mqttClient.PublishAsync($"homeassistant/light/{unique_id}/config", JsonConvert.SerializeObject(dict));
 
             this.PublishInfo();
         }
@@ -347,7 +365,7 @@ namespace HA
             }
             Dictionary<string, object> dict = new Dictionary<string, object>();
             // 屏幕亮度
-            int brightness = Settings.System.GetInt(this.ContentResolver, Settings.System.ScreenBrightness);            
+            int brightness = Settings.System.GetInt(this.ContentResolver, Settings.System.ScreenBrightness);
             // 音乐音量
             int musicVolume = audioManager.GetStreamVolume(Stream.Music);
             int musicVolumeMax = audioManager.GetStreamMaxVolume(Android.Media.Stream.Music);
@@ -372,7 +390,7 @@ namespace HA
             dict.Add("语音识别", $"{topic}stt");
             dict.Add("调试时间", debugTime);
             dict.Add("调试消息", debugMsg);
-            
+
             dict.Add("屏幕亮度", brightness);
             dict.Add("光照传感器", LightSensor);
             dict.Add("电量", battery);
@@ -406,7 +424,8 @@ namespace HA
         void Speak(string value)
         {
             // 主线程异步调用方法
-            MainThread.BeginInvokeOnMainThread(async () => {
+            MainThread.BeginInvokeOnMainThread(async () =>
+            {
                 await Xamarin.Essentials.TextToSpeech.SpeakAsync(value);
             });
         }
@@ -436,21 +455,7 @@ namespace HA
         #region
         void FloatWindow(bool flags)
         {
-            if (floatButton != null)
-            {
-                if (flags)
-                {
-                    floatButton.Visibility = ViewStates.Visible;
-                    Settings.System.PutInt(this.ContentResolver, Settings.System.ScreenBrightness, 1);
-                }
-                else
-                {
-                    floatButton.Visibility = ViewStates.Invisible;
-                    Settings.System.PutInt(this.ContentResolver, Settings.System.ScreenBrightness, 125);
-                }
-                return;
-            }
-            if (flags)
+            if (floatButton == null)
             {
                 WindowManagerLayoutParams layoutParams = new WindowManagerLayoutParams();
                 // 判断当前Android系统版本
@@ -474,18 +479,29 @@ namespace HA
                 layoutParams.Y = 0;
                 // 生成一个按钮
                 floatButton = new Button(this.ApplicationContext);
-                // floatButton.Text = System.DateTime.Now.ToString("HH:mm:ss");
-                floatButton.Text = "";
+                // floatButton.Text = 
+                floatButton.Text = System.DateTime.Now.ToString("HH:mm:ss");
+                floatButton.SetTextSize(ComplexUnitType.Sp, 50);
                 floatButton.SetBackgroundColor(Color.Black);
                 floatButton.SetTextColor(Color.White);
-                floatButton.Visibility = ViewStates.Invisible;
+                // floatButton.Visibility = ViewStates.Invisible;
                 floatButton.Click += (s, e) =>
                 {
                     floatButton.Visibility = ViewStates.Invisible;
                     Settings.System.PutInt(this.ContentResolver, Settings.System.ScreenBrightness, 125);
                 };
                 WindowManager.AddView(floatButton, layoutParams);
-            }    
+            }
+            if (flags)
+            {
+                floatButton.Visibility = ViewStates.Invisible;
+                Settings.System.PutInt(this.ContentResolver, Settings.System.ScreenBrightness, 200);
+            }
+            else
+            {
+                floatButton.Visibility = ViewStates.Visible;
+                Settings.System.PutInt(this.ContentResolver, Settings.System.ScreenBrightness, 1);
+            }
         }
         #endregion
 
@@ -528,7 +544,7 @@ namespace HA
                         string msg = matches[0];
                         WebClient wc = new WebClient();
                         byte[] bResponse = wc.DownloadData(ha_api + "?text=" + Uri.Encode(msg));
-                        string strResponse =System.Text.Encoding.UTF8.GetString(bResponse);
+                        string strResponse = System.Text.Encoding.UTF8.GetString(bResponse);
                         System.Console.WriteLine(strResponse);
                     }
                     else
@@ -545,7 +561,7 @@ namespace HA
         #region 传感器
         public void OnAccuracyChanged(Sensor sensor, [GeneratedEnum] SensorStatus accuracy)
         {
-            
+
         }
 
         public void OnSensorChanged(SensorEvent e)
@@ -553,7 +569,7 @@ namespace HA
             // 光照传感器
             if (e.Sensor.Name.Contains("Light Sensor"))
             {
-                    LightSensor = e.Values[0];
+                LightSensor = e.Values[0];
             }
         }
         #endregion
