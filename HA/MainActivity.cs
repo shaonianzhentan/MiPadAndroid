@@ -226,6 +226,7 @@ namespace HA
             string clientId = System.Guid.NewGuid().ToString();
             // 设置主题
             string topic_set = $"{topic}set";
+            string topic_state = $"{topic}state";
             string topic_command = $"{topic}command";
             string topic_brightness = $"{topic}brightness";
             // 定义配置信息
@@ -311,7 +312,20 @@ namespace HA
                 }
                 else if (topic == topic_command)
                 {
-                    this.FloatWindow(payload == "ON");
+                    if (floatButton != null)
+                    {
+                        // 显示黑屏
+                        if(payload == "OFF" && floatButton.Visibility == ViewStates.Invisible)
+                        {
+                            this.FloatWindow(true);
+                        }
+                        // 隐藏黑屏
+                        else if(payload == "ON" && floatButton.Visibility == ViewStates.Visible)
+                        {
+                            this.FloatWindow(false);
+                        }
+                    }
+                    PublishInfo();
                 }
                 else if (topic == topic_brightness)
                 {
@@ -336,8 +350,8 @@ namespace HA
             dict.Add("json_attributes_topic", $"{topic}attributes");
             dict.Add("brightness_command_topic", $"{topic}brightness");
             dict.Add("command_topic", $"{topic}command");
-            dict.Add("device_class", "battery");
-            dict.Add("unit_of_measurement", "%");
+            // dict.Add("device_class", "battery");
+            // dict.Add("unit_of_measurement", "%");
             // 实体唯一ID
             dict.Add("unique_id", unique_id);
             // 设备信息
@@ -351,8 +365,6 @@ namespace HA
             });
             // 上报信息
             mqttClient.PublishAsync($"homeassistant/light/{unique_id}/config", JsonConvert.SerializeObject(dict));
-
-            this.PublishInfo();
         }
 
 
@@ -391,7 +403,7 @@ namespace HA
             dict.Add("调试时间", debugTime);
             dict.Add("调试消息", debugMsg);
 
-            dict.Add("屏幕亮度", brightness);
+            dict.Add("brightness", brightness);
             dict.Add("光照传感器", LightSensor);
             dict.Add("电量", battery);
             dict.Add("充电状态", batteryState[(int)Xamarin.Essentials.Battery.State]);
@@ -417,7 +429,8 @@ namespace HA
             dict.Add("WiFi信号", wifiInfo.Rssi);
             dict.Add("Mac地址", wifiInfo.MacAddress);
 
-            mqttClient.PublishAsync($"{topic}state", battery);
+            string state = floatButton != null && floatButton.Visibility == ViewStates.Invisible ? "ON": "OFF";
+            mqttClient.PublishAsync($"{topic}state", state);
             mqttClient.PublishAsync($"{topic}attributes", JsonConvert.SerializeObject(dict));
         }
 
@@ -453,55 +466,69 @@ namespace HA
         }
 
         #region
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="flags">显示黑屏：true,  关闭黑屏：false</param>
         void FloatWindow(bool flags)
         {
-            if (floatButton == null)
+            MainThread.BeginInvokeOnMainThread(() =>
             {
-                WindowManagerLayoutParams layoutParams = new WindowManagerLayoutParams();
-                // 判断当前Android系统版本
-                if (Build.VERSION.SdkInt >= BuildVersionCodes.M)
+                if (floatButton == null)
                 {
-                    layoutParams.Type = WindowManagerTypes.ApplicationOverlay;
+                    WindowManagerLayoutParams layoutParams = new WindowManagerLayoutParams();
+                    // 判断当前Android系统版本
+                    if (Build.VERSION.SdkInt >= BuildVersionCodes.M)
+                    {
+                        layoutParams.Type = WindowManagerTypes.ApplicationOverlay;
+                    }
+                    else
+                    {
+                        layoutParams.Type = WindowManagerTypes.Application;
+                    }
+                    layoutParams.Format = Format.Rgba8888;
+                    layoutParams.Gravity = GravityFlags.Left | GravityFlags.Top;
+                    layoutParams.Flags = WindowManagerFlags.NotTouchModal | WindowManagerFlags.NotFocusable | WindowManagerFlags.Fullscreen;
+                    // 窗口的宽高和位置
+                    DisplayMetrics dm = new DisplayMetrics();
+                    WindowManager.DefaultDisplay.GetMetrics(dm);
+                    layoutParams.Width = dm.WidthPixels;
+                    layoutParams.Height = dm.HeightPixels;
+                    layoutParams.X = 0;
+                    layoutParams.Y = 0;
+                    // 生成一个按钮
+                    floatButton = new Button(this.ApplicationContext);
+                    // floatButton.Text = 
+                    floatButton.Text = System.DateTime.Now.ToString("HH:mm:ss");
+                    floatButton.SetTextSize(ComplexUnitType.Sp, 200);
+                    floatButton.SetBackgroundColor(Color.Black);
+                    floatButton.SetTextColor(Color.White);
+                    // floatButton.Visibility = ViewStates.Invisible;
+                    floatButton.Click += (s, e) =>
+                    {
+                        floatButton.Visibility = ViewStates.Invisible;
+                        Settings.System.PutInt(this.ContentResolver, Settings.System.ScreenBrightness, 200);
+                    };
+                    WindowManager.AddView(floatButton, layoutParams);
+
+                    Timer timer = new Timer((state) =>
+                    {
+                        MainThread.BeginInvokeOnMainThread(() =>
+                        {
+                            if (floatButton.Visibility == ViewStates.Visible)
+                            {
+                                floatButton.Text = System.DateTime.Now.ToString("HH:mm:ss");
+                            }
+                        });
+
+                    }, null, 0, 1000);
                 }
-                else
+                floatButton.Visibility = flags ? ViewStates.Visible : ViewStates.Invisible;
+                if (flags)
                 {
-                    layoutParams.Type = WindowManagerTypes.Application;
+                    Settings.System.PutInt(this.ContentResolver, Settings.System.ScreenBrightness, 1);
                 }
-                layoutParams.Format = Format.Rgba8888;
-                layoutParams.Gravity = GravityFlags.Left | GravityFlags.Top;
-                layoutParams.Flags = WindowManagerFlags.NotTouchModal | WindowManagerFlags.NotFocusable | WindowManagerFlags.Fullscreen;
-                // 窗口的宽高和位置
-                DisplayMetrics dm = new DisplayMetrics();
-                WindowManager.DefaultDisplay.GetMetrics(dm);
-                layoutParams.Width = dm.WidthPixels;
-                layoutParams.Height = dm.HeightPixels;
-                layoutParams.X = 0;
-                layoutParams.Y = 0;
-                // 生成一个按钮
-                floatButton = new Button(this.ApplicationContext);
-                // floatButton.Text = 
-                floatButton.Text = System.DateTime.Now.ToString("HH:mm:ss");
-                floatButton.SetTextSize(ComplexUnitType.Sp, 50);
-                floatButton.SetBackgroundColor(Color.Black);
-                floatButton.SetTextColor(Color.White);
-                // floatButton.Visibility = ViewStates.Invisible;
-                floatButton.Click += (s, e) =>
-                {
-                    floatButton.Visibility = ViewStates.Invisible;
-                    Settings.System.PutInt(this.ContentResolver, Settings.System.ScreenBrightness, 125);
-                };
-                WindowManager.AddView(floatButton, layoutParams);
-            }
-            if (flags)
-            {
-                floatButton.Visibility = ViewStates.Invisible;
-                Settings.System.PutInt(this.ContentResolver, Settings.System.ScreenBrightness, 200);
-            }
-            else
-            {
-                floatButton.Visibility = ViewStates.Visible;
-                Settings.System.PutInt(this.ContentResolver, Settings.System.ScreenBrightness, 1);
-            }
+            });
         }
         #endregion
 
