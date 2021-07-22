@@ -45,7 +45,6 @@ namespace HA
         HttpListener httpListenner = null;
         Button floatButton = null;
         string topic = $"android/{Android.OS.Build.Serial}/".ToLower();
-        float LightSensor = 0;
         string debugTime = "";
         string debugMsg = "";
         string ha_api = "";
@@ -127,6 +126,10 @@ namespace HA
                                                     web_url = value;
                                                     webView.LoadUrl(value);
                                                 }
+                                                // 设置URL时，进行配置上报
+                                                if (mqttClient != null && mqttClient.IsConnected) {
+                                                    this.PublishConfig();
+                                                }
                                                 break;
                                             case "float":
                                                 FloatWindow(value == "1");
@@ -135,15 +138,11 @@ namespace HA
                                                 if (mqttClient == null)
                                                 {
                                                     this.ConnectMQTT(value);
-                                                    // 定时器（每5秒执行一次）
+                                                    // 定时器（每12秒执行一次）
                                                     Timer timer = new Timer((state) =>
                                                     {
-                                                        // 当前连接中，则进行上报状态
-                                                        if (mqttClient.IsConnected)
-                                                        {
-                                                            this.PublishConfig();
-                                                        }
-                                                        else
+                                                        // 如果未连接，则进行重新连接
+                                                        if (!mqttClient.IsConnected)
                                                         {
                                                             // 客户端重连
                                                             this.ConnectMQTT(value);
@@ -336,6 +335,7 @@ namespace HA
             await mqttClient.ConnectAsync(options.Build(), CancellationToken.None);
         }
 
+
         /// <summary>
         /// 发送配置信息
         /// </summary>
@@ -343,6 +343,16 @@ namespace HA
         {
             string model = "android";
             string unique_id = $"{model}-xiaomipinban";
+            var device = new
+            {
+                identifiers = Android.OS.Build.Id,
+                manufacturer = Android.OS.Build.Manufacturer,
+                model = Android.OS.Build.Model,
+                name = "MIPadAndroid",
+                sw_version = Android.OS.Build.RadioVersion
+            };
+
+            // 灯
             Dictionary<string, object> dict = new Dictionary<string, object>();
             dict.Add("name", "小米平板");
             dict.Add("icon", "mdi:android");
@@ -355,16 +365,24 @@ namespace HA
             // 实体唯一ID
             dict.Add("unique_id", unique_id);
             // 设备信息
-            dict.Add("device", new
-            {
-                identifiers = Android.OS.Build.Id,
-                manufacturer = Android.OS.Build.Manufacturer,
-                model = Android.OS.Build.Model,
-                name = "MIPadAndroid",
-                sw_version = Android.OS.Build.RadioVersion
-            });
+            dict.Add("device", device);
             // 上报信息
             mqttClient.PublishAsync($"homeassistant/light/{unique_id}/config", JsonConvert.SerializeObject(dict));
+
+            // 光照传感器
+            string lightSensor_unique_id = $"{model}-light_sensor";
+            Dictionary<string, object> lightSensorDict = new Dictionary<string, object>();
+            lightSensorDict.Add("name", "光照传感器");
+            // lightSensorDict.Add("icon", "mdi:android");
+            lightSensorDict.Add("state_topic", $"{topic}lightSensor/state");
+            lightSensorDict.Add("device_class", "illuminance");
+            lightSensorDict.Add("unit_of_measurement", "lx");
+            // 实体唯一ID
+            lightSensorDict.Add("unique_id", lightSensor_unique_id);
+            // 设备信息
+            lightSensorDict.Add("device", device);
+            // 上报信息
+            mqttClient.PublishAsync($"homeassistant/sensor/{lightSensor_unique_id}/config", JsonConvert.SerializeObject(lightSensorDict));
         }
 
 
@@ -404,7 +422,6 @@ namespace HA
             dict.Add("调试消息", debugMsg);
 
             dict.Add("brightness", brightness);
-            dict.Add("光照传感器", LightSensor);
             dict.Add("电量", battery);
             dict.Add("充电状态", batteryState[(int)Xamarin.Essentials.Battery.State]);
 
@@ -596,7 +613,10 @@ namespace HA
             // 光照传感器
             if (e.Sensor.Name.Contains("Light Sensor"))
             {
-                LightSensor = e.Values[0];
+                if(mqttClient != null && mqttClient.IsConnected)
+                {
+                    mqttClient.PublishAsync($"{topic}lightSensor/state", e.Values[0].ToString());
+                }
             }
         }
         #endregion
