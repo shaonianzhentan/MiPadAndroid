@@ -44,7 +44,7 @@ namespace HA
         IMqttClient mqttClient = null;
         HttpListener httpListenner = null;
         Button floatButton = null;
-        string topic = $"android/{Android.OS.Build.Serial}/".ToLower();
+        string topic = $"android/{Android.OS.Build.GetSerial()}/".ToLower();
         string debugTime = "";
         string debugMsg = "";
         string ha_api = "";
@@ -383,6 +383,20 @@ namespace HA
             lightSensorDict.Add("device", device);
             // 上报信息
             mqttClient.PublishAsync($"homeassistant/sensor/{lightSensor_unique_id}/config", JsonConvert.SerializeObject(lightSensorDict));
+
+            // 电量传感器
+            string batterySensor_unique_id = $"{model}-light_sensor";
+            Dictionary<string, object> batterySensorDict = new Dictionary<string, object>();
+            batterySensorDict.Add("name", "小米平板电量");
+            batterySensorDict.Add("state_topic", $"{topic}batterySensor/state");
+            batterySensorDict.Add("device_class", "battery");
+            batterySensorDict.Add("unit_of_measurement", "%");
+            // 实体唯一ID
+            batterySensorDict.Add("unique_id", batterySensor_unique_id);
+            // 设备信息
+            batterySensorDict.Add("device", device);
+            // 上报信息
+            mqttClient.PublishAsync($"homeassistant/sensor/{batterySensor_unique_id}/config", JsonConvert.SerializeObject(batterySensorDict));
         }
 
 
@@ -422,9 +436,7 @@ namespace HA
             dict.Add("调试消息", debugMsg);
 
             dict.Add("brightness", brightness);
-            dict.Add("电量", battery);
             dict.Add("充电状态", batteryState[(int)Xamarin.Essentials.Battery.State]);
-
             dict.Add("音乐音量", musicVolume);
             dict.Add("闹钟音量", alarmVolume);
             dict.Add("系统音量", systemVolume);
@@ -446,9 +458,12 @@ namespace HA
             dict.Add("WiFi信号", wifiInfo.Rssi);
             dict.Add("Mac地址", wifiInfo.MacAddress);
 
-            string state = floatButton != null && floatButton.Visibility == ViewStates.Invisible ? "ON": "OFF";
+            string state = floatButton != null && floatButton.Visibility == ViewStates.Invisible ? "ON" : "OFF";
             mqttClient.PublishAsync($"{topic}state", state);
             mqttClient.PublishAsync($"{topic}attributes", JsonConvert.SerializeObject(dict));
+
+            // 发送电量信息
+            mqttClient.PublishAsync($"{topic}batterySensor/state", battery);
         }
 
         void Speak(string value)
