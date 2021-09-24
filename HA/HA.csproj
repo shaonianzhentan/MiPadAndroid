@@ -69,10 +69,8 @@
     <Reference Include="System.Numerics.Vectors" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DeviceInfo.cs" />
     <Compile Include="MainActivity.cs" />
     <Compile Include="MqttHA.cs" />
-    <Compile Include="MusicService.cs" />
     <Compile Include="Resources\Resource.designer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
