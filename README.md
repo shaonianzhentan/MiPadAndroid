@@ -9,27 +9,12 @@
 HA配置
 ```yaml
 mipad_android:
-  host: 192.168.1.104
-  web_url: http://192.168.1.119/local/TileBoard/index.html?r=TIMESTAMP
-  mqtt_host: 192.168.1.119
-```
-
-使用自定义面板
-```yaml
-sensor.xiao_mi_ping_ban:
-  custom_ui_more_info: mipad-android
-```
-
-设置功能
-```yaml
-service: mqtt.publish
-data:
-  topic: android/13e6af99/set
-  payload: 'tts: 这是一条TTS文本转语音消息'
-  payload: 'brightness: 255'
-  payload: 'music_volume: 15'
-  payload: 'alarm_volume: 7'
-  payload: 'system_volume: 7'
+  mqtt: 192.168.1.119
+  list:
+    - host: 192.168.1.104
+      url: http://192.168.1.119/local/TileBoard/index.html?r=TIMESTAMP
+    - host: 192.168.1.105
+      url: http://192.168.1.119/local/TileBoard/index.html?r=TIMESTAMP
 ```
 
 ## 模板示例

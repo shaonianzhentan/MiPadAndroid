@@ -1,27 +1,12 @@
-load:
-  description: 加载网页链接
-  fields:
-    url:
-      name: 网页链接地址
-      description: 网页链接地址
-      example: 'https://ha.jiluxinqing.com'
-      selector:
-        text:
-    ip:
-      name: IP地址 
-      description: 小米平板IP地址
-      example: '192.168.1.111'
-      selector:
-        text:
-    stt:
-      name: 语音识别 
-      description: 语音识别
-      example: '1'
-      selector:
-        text:
 setting:
   description: 小米平板设置
   fields:
+    ip:
+      name: IP地址 
+      description: 设备IP地址
+      example: '192.168.1.111'
+      selector:
+        text:
     brightness:
       name: 屏幕亮度
       description: 屏幕亮度
