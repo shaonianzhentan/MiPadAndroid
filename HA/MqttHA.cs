@@ -68,6 +68,7 @@ public class MqttHA
         dict["attributes"] = $"{topic}attributes";
         dict["command"] = $"{topic}command";
         dict["brightness"] = $"{topic}brightness";
+        dict["brightness_command"] = $"{topic}brightness_command";
         dict["object_id"] = pinyin;
         return dict;
     }
@@ -160,7 +161,8 @@ public class MqttHA
         dict.Add("name", name);
         dict.Add("state_topic", topic["state"]);
         dict.Add("json_attributes_topic", topic["attributes"]);
-        dict.Add("brightness_command_topic", topic["brightness"]);
+        dict.Add("brightness_state_topic", topic["brightness"]);
+        dict.Add("brightness_command_topic", topic["brightness_command"]);
         dict.Add("command_topic", topic["command"]);
         Config("light", topic["object_id"], dict);
         return topic;

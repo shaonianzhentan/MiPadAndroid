@@ -69,6 +69,7 @@
     <Reference Include="System.Numerics.Vectors" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DelayAction.cs" />
     <Compile Include="MainActivity.cs" />
     <Compile Include="MqttHA.cs" />
     <Compile Include="Resources\Resource.designer.cs" />

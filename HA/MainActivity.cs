@@ -30,6 +30,7 @@ using Java.Lang;
 using Android.Hardware;
 using Android.Graphics.Drawables;
 using Xamarin.Essentials;
+using Android.Views.InputMethods;
 
 namespace HA
 {
@@ -47,10 +48,10 @@ namespace HA
         // 日志行数
         int logLine = 0;
         // MQTT
+        DelayAction delayAction = new DelayAction();
         Button floatButton = null;
         MqttHA mqttHA = null;
         Dictionary<string, string> dictScreen;
-        Dictionary<string, string> dictLock;
         Dictionary<string, string> dictLightSensor;
         Dictionary<string, string> dictBattery;
         Dictionary<string, string> dictCamera;
@@ -70,7 +71,7 @@ namespace HA
             txtPort = this.FindViewById<TextInputEditText>(Resource.Id.txtPort);
             txtUser = this.FindViewById<TextInputEditText>(Resource.Id.txtUser);
             txtPassword = this.FindViewById<TextInputEditText>(Resource.Id.txtPassword);
-
+            
             Button button = this.FindViewById<Button>(Resource.Id.button1);
             button.Click += Button_Click;
 
@@ -99,9 +100,7 @@ namespace HA
             }
             else
             {
-                
             }
-
             // 读取配置
             if (File.Exists(configFile))
             {
@@ -114,6 +113,7 @@ namespace HA
                     txtUser.Text = dict["user"].ToString();
                     txtPassword.Text = dict["password"].ToString();
                     Button_Click(null, null);
+                    this.Window.SetSoftInputMode(Android.Views.SoftInput.StateHidden | Android.Views.SoftInput.AdjustResize);
                 }
                 catch(System.Exception ex)
                 {
@@ -126,14 +126,7 @@ namespace HA
                 txtUser.Text = "admin";
                 txtPassword.Text = "public";
             }
-
-            // 注册传感器
-            SensorManager sensorManager = GetSystemService(Context.SensorService) as SensorManager;
-            sensorManager.RegisterListener(this, sensorManager.GetDefaultSensor(SensorType.Light), SensorDelay.Fastest);
-            // sensorManager.RegisterListener(this, sensorManager.GetDefaultSensor(SensorType.Proximity), SensorDelay.Normal);
-
-            // 提示常驻通知
-            // AddNotification();
+            
         }
 
         private void Button_Click(object sender, System.EventArgs e)
@@ -174,41 +167,63 @@ namespace HA
                 {
                     if (payload == "online")
                     {
+                        log("HomeAssistant自动发现");
                         this.PublishConfig();
                     }
                 });
-                // 屏幕亮度                
+                // 屏幕亮度
+                int ScreenBrightness = 200;
                 mqttHA.Subscribe(dictScreen["command"], (string payload) =>
                 {
                     mqttHA.Publish(dictScreen["state"], payload);
-                    Settings.System.PutInt(this.ContentResolver, Settings.System.ScreenBrightness, payload == "OFF" ? 1 : 200);
+                    if (payload == "OFF")
+                    {
+                        log("显示屏保");
+                        ScreenBrightness = Settings.System.GetInt(this.ContentResolver, Settings.System.ScreenBrightness);
+                        Settings.System.PutInt(this.ContentResolver, Settings.System.ScreenBrightness, 1);
+                        this.FloatWindow(true);
+                    }
+                    else
+                    {
+                        // 如果亮度最低，则设置
+                        if(Settings.System.GetInt(this.ContentResolver, Settings.System.ScreenBrightness) == 1)
+                        {
+                            Settings.System.PutInt(this.ContentResolver, Settings.System.ScreenBrightness, ScreenBrightness);
+                        }
+                        this.FloatWindow(false);
+                    }
+                    this.PublishInfo();
                 });
-                mqttHA.Subscribe(dictScreen["brightness"], (string payload) =>
+                mqttHA.Subscribe(dictScreen["brightness_command"], (string payload) =>
                 {
+                    mqttHA.Publish(dictScreen["brightness"], payload);
+
                     Settings.System.PutInt(this.ContentResolver, Settings.System.ScreenBrightness, System.Convert.ToInt32(payload));
                     log($"设置亮度：{payload}");
-                });
-                // 锁屏
-                mqttHA.Subscribe(dictLock["command"], (string payload) =>
-                {
-                    mqttHA.Publish(dictLock["state"], payload);
-                    switch (payload)
-                    {
-                        case "UNLOCK":
-                            this.FloatWindow(false);
-                            break;
-                        case "LOCK":
-                            this.FloatWindow(true);
-                            break;
-                    }
+
+                    this.PublishInfo();
                 });
                 // 音量
                 mqttHA.Subscribe(dictVolume["command"], (string payload) =>
                 {
-                    audioManager.SetStreamVolume(Android.Media.Stream.System, int.Parse(payload), VolumeNotificationFlags.PlaySound);
+                    audioManager.SetStreamVolume(Android.Media.Stream.Music, int.Parse(payload), VolumeNotificationFlags.PlaySound);
+                    log($"设置音量：{payload}");
+                    this.PublishInfo();
                 });
                 // 发送信息
                 this.PublishInfo();
+
+                // 注册传感器
+                SensorManager sensorManager = GetSystemService(Context.SensorService) as SensorManager;
+                sensorManager.RegisterListener(this, sensorManager.GetDefaultSensor(SensorType.Light), SensorDelay.Fastest);
+                /*
+                var sensors = sensorManager.GetSensorList(SensorType.All);
+                foreach(Sensor sensor in sensors)
+                {
+                    log($"{sensor.Name}：{sensor.Type}");                    
+                }
+                sensorManager.RegisterListener(this, sensorManager.GetDefaultSensor(SensorType.Proximity), SensorDelay.Fastest);
+                */
             });
             txtIP.Enabled = false;
             txtPort.Enabled = false;
@@ -218,30 +233,41 @@ namespace HA
 
         void PublishConfig()
         {
-            int systemVolumeMin = audioManager.GetStreamMinVolume(Android.Media.Stream.System);
-            int systemVolumeMax = audioManager.GetStreamMaxVolume(Android.Media.Stream.System);
+            // int systemVolumeMin = audioManager.GetStreamMinVolume(Android.Media.Stream.System);
+            // int systemVolumeMax = audioManager.GetStreamMaxVolume(Android.Media.Stream.System);
 
             dictLightSensor = mqttHA.ConfigSensor("光照传感器", "lx", "illuminance");
             dictScreen = mqttHA.ConfigLight("我的平板");
             dictCamera = mqttHA.ConfigCamera("我的平板");
-            dictLock = mqttHA.ConfigLock("我的平板");
             dictBattery = mqttHA.ConfigSensor("平板电量", "%", "battery");
-            dictVolume = mqttHA.ConfigNumber("平板音量", systemVolumeMin, systemVolumeMax);
+            dictVolume = mqttHA.ConfigNumber("平板音量", 0, 15);
         }
 
         void PublishInfo()
         {
-            // 屏幕截图
-            this.PublishScreenshot();
-            // 电量
-            string[] batteryState = new string[] { "Unknown", "Charging", "Discharging", "Full", "NotCharging", "NotPresent" };
-            mqttHA.Publish(dictBattery["state"], (Xamarin.Essentials.Battery.ChargeLevel * 100).ToString());
-            Dictionary<string, string> dictBatteryAttributes = new Dictionary<string, string>();
-            dictBatteryAttributes.Add("BatteryState", batteryState[(int)Xamarin.Essentials.Battery.State]);
-            mqttHA.PublishJson(dictBattery["attributes"], dictBatteryAttributes);
-            // 音量
-            int systemVolume = audioManager.GetStreamVolume(Android.Media.Stream.System);
-            mqttHA.Publish(dictVolume["state"], systemVolume.ToString());
+            delayAction.Delay(3000, null, () =>
+            {
+                // 电量
+                string[] batteryState = new string[] { "Unknown", "Charging", "Discharging", "Full", "NotCharging", "NotPresent" };
+                mqttHA.Publish(dictBattery["state"], (Xamarin.Essentials.Battery.ChargeLevel * 100).ToString());
+                Dictionary<string, string> dictBatteryAttributes = new Dictionary<string, string>();
+                dictBatteryAttributes.Add("BatteryState", batteryState[(int)Xamarin.Essentials.Battery.State]);
+                mqttHA.PublishJson(dictBattery["attributes"], dictBatteryAttributes);
+                // 音量
+                int systemVolume = audioManager.GetStreamVolume(Android.Media.Stream.Music);
+                mqttHA.Publish(dictVolume["state"], systemVolume.ToString());
+
+                // 屏幕开关
+                if (floatButton != null)
+                {
+                    mqttHA.Publish(dictScreen["state"], floatButton.Visibility == ViewStates.Visible ? "OFF" : "ON");
+                }
+                // 屏幕亮度
+                mqttHA.Publish(dictScreen["brightness"], Settings.System.GetInt(this.ContentResolver, Settings.System.ScreenBrightness).ToString());
+
+                // 屏幕截图
+                this.PublishScreenshot();
+            });           
         }
 
         void log(string msg)
@@ -278,10 +304,17 @@ namespace HA
             // 光照传感器
             if(e.Sensor.Name.Contains("Light Sensor"))
             {
-                if(mqttHA!=null && mqttHA.mqttClient.IsConnected)
+                string LightSensor = e.Values[0].ToString();
+                if (mqttHA == null && dictLightSensor == null)
                 {
-                    mqttHA.Publish(dictLightSensor["state"], e.Values[0].ToString());
+                    Button_Click(null, null);
                 }
+                else if (mqttHA != null && mqttHA.mqttClient.IsConnected && dictLightSensor != null)
+                {
+                    mqttHA.Publish(dictLightSensor["state"], LightSensor);
+                    this.PublishInfo();
+                }
+                this.AddNotification($"当前光照：{LightSensor}");
                 // this.log(e.Sensor.Name + " : " + e.Values[0].ToString());
             }
         }
@@ -305,11 +338,12 @@ namespace HA
                     }
                     else
                     {
-                        layoutParams.Type = WindowManagerTypes.Application;
+                        layoutParams.Type = WindowManagerTypes.SystemError;
                     }
                     layoutParams.Format = Format.Rgba8888;
                     layoutParams.Gravity = GravityFlags.Left | GravityFlags.Top;
-                    layoutParams.Flags = WindowManagerFlags.NotTouchModal | WindowManagerFlags.NotFocusable | WindowManagerFlags.Fullscreen;
+                    layoutParams.Flags = WindowManagerFlags.Fullscreen | WindowManagerFlags.TranslucentStatus | WindowManagerFlags.TranslucentNavigation;
+                                       
                     // 窗口的宽高和位置
                     DisplayMetrics dm = new DisplayMetrics();
                     WindowManager.DefaultDisplay.GetMetrics(dm);
@@ -329,6 +363,8 @@ namespace HA
                     {
                         floatButton.Visibility = ViewStates.Invisible;
                         Settings.System.PutInt(this.ContentResolver, Settings.System.ScreenBrightness, 200);
+
+                        PublishInfo();
                     };
                     WindowManager.AddView(floatButton, layoutParams);
 
@@ -345,10 +381,6 @@ namespace HA
                     }, null, 0, 1000);
                 }
                 floatButton.Visibility = flags ? ViewStates.Visible : ViewStates.Invisible;
-                if (flags)
-                {
-                    Settings.System.PutInt(this.ContentResolver, Settings.System.ScreenBrightness, 1);
-                }
             });
         }
         #endregion
@@ -372,9 +404,8 @@ namespace HA
             }
         }
 
-
         // 添加通知
-        public void AddNotification()
+        public void AddNotification(string text)
         {
             try
             {
@@ -386,7 +417,7 @@ namespace HA
 
                 Intent intent = new Intent(this, typeof(MainActivity));
                 PendingIntent pendingIntent = PendingIntent.GetActivity(this, 0, intent, 0);
-                n.SetLatestEventInfo(this, "HA", "正在运行中...", pendingIntent);
+                n.SetLatestEventInfo(this, "HA", text, pendingIntent);
                 nm.Notify(123, n);
             }
             catch (Exception ex)
