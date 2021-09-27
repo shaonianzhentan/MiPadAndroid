@@ -1,10 +1,10 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <SelectedDevice>Xiaomi MI PAD</SelectedDevice>
+    <SelectedDevice>Xiaomi MI 9</SelectedDevice>
     <AndroidDesignerPreferredTheme>AppTheme</AndroidDesignerPreferredTheme>
     <AndroidDesignerPreferredDevice>Nexus 4</AndroidDesignerPreferredDevice>
-    <DefaultDevice>pixel_2_kit_kat_4_4_-_api_19</DefaultDevice>
-    <ActiveDebugProfile>Xiaomi MI PAD</ActiveDebugProfile>
+    <DefaultDevice>pixel_2_pie_9_0_-_api_28</DefaultDevice>
+    <ActiveDebugProfile>Xiaomi MI 9</ActiveDebugProfile>
   </PropertyGroup>
 </Project>

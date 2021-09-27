@@ -73,7 +73,7 @@ public class MqttHA
         return dict;
     }
 
-    async public void Connect(Action<dynamic> connected)
+    async public void Connect(Action<dynamic> connected, Action<dynamic> disconnected)
     {
         // 连接MQTT服务
         string clientId = Guid.NewGuid().ToString();
@@ -101,6 +101,7 @@ public class MqttHA
         mqttClient.UseDisconnectedHandler((action) =>
         {
             // 连接中断了啊
+            disconnected(action);
         });
         mqttClient.UseApplicationMessageReceivedHandler(e =>
         {

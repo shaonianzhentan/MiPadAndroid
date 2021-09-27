@@ -31,6 +31,7 @@ using Android.Hardware;
 using Android.Graphics.Drawables;
 using Xamarin.Essentials;
 using Android.Views.InputMethods;
+using Android.Content.PM;
 
 namespace HA
 {
@@ -63,6 +64,10 @@ namespace HA
             Xamarin.Essentials.Platform.Init(this, savedInstanceState);
             // Set our view from the "main" layout resource
             SetContentView(Resource.Layout.activity_main);
+            // 保持屏幕常亮
+            DeviceDisplay.KeepScreenOn = true;
+            // this.RequestedOrientation = ScreenOrientation.Landscape;
+
             audioManager = this.GetSystemService(Context.AudioService) as AudioManager;
             configFile = FilesDir + "/ha_config.json";
 
@@ -186,7 +191,7 @@ namespace HA
                     else
                     {
                         // 如果亮度最低，则设置
-                        if(Settings.System.GetInt(this.ContentResolver, Settings.System.ScreenBrightness) == 1)
+                        if (Settings.System.GetInt(this.ContentResolver, Settings.System.ScreenBrightness) == 1)
                         {
                             Settings.System.PutInt(this.ContentResolver, Settings.System.ScreenBrightness, ScreenBrightness);
                         }
@@ -210,6 +215,7 @@ namespace HA
                     log($"设置音量：{payload}");
                     this.PublishInfo();
                 });
+
                 // 发送信息
                 this.PublishInfo();
 
@@ -224,6 +230,17 @@ namespace HA
                 }
                 sensorManager.RegisterListener(this, sensorManager.GetDefaultSensor(SensorType.Proximity), SensorDelay.Fastest);
                 */
+
+                // 监听电量
+                Battery.BatteryInfoChanged += (bs, be) =>
+                {
+                    PublishInfo();
+                };
+                // 屏幕打开
+                mqttHA.Publish(dictScreen["state"], "ON");
+            }, (disEvent) =>
+            {
+                log("连接中断了");
             });
             txtIP.Enabled = false;
             txtPort.Enabled = false;
@@ -233,26 +250,55 @@ namespace HA
 
         void PublishConfig()
         {
-            // int systemVolumeMin = audioManager.GetStreamMinVolume(Android.Media.Stream.System);
-            // int systemVolumeMax = audioManager.GetStreamMaxVolume(Android.Media.Stream.System);
+            int volumeMin = 0;
+            int volumeMax = 15;
+            try
+            {
+                volumeMin = audioManager.GetStreamMinVolume(Android.Media.Stream.Music);
+                volumeMax = audioManager.GetStreamMaxVolume(Android.Media.Stream.Music);
+            }
+            catch(Exception ex)
+            {
+                log(ex.Message);
+            }
 
             dictLightSensor = mqttHA.ConfigSensor("光照传感器", "lx", "illuminance");
             dictScreen = mqttHA.ConfigLight("我的平板");
-            dictCamera = mqttHA.ConfigCamera("我的平板");
+            dictCamera = mqttHA.ConfigCamera("平板桌面");
+            dictVolume = mqttHA.ConfigNumber("平板音量", volumeMin, volumeMax);
             dictBattery = mqttHA.ConfigSensor("平板电量", "%", "battery");
-            dictVolume = mqttHA.ConfigNumber("平板音量", 0, 15);
         }
 
         void PublishInfo()
         {
             delayAction.Delay(3000, null, () =>
             {
-                // 电量
-                string[] batteryState = new string[] { "Unknown", "Charging", "Discharging", "Full", "NotCharging", "NotPresent" };
-                mqttHA.Publish(dictBattery["state"], (Xamarin.Essentials.Battery.ChargeLevel * 100).ToString());
+                // 如果未连接，则检测端口重新连接
+                if (!mqttHA.mqttClient.IsConnected)
+                {
+                    // 如果端口打开，则进行重连
+                    if (mqttHA.TcpClientCheck(txtIP.Text.Trim(), int.Parse(txtPort.Text.Trim())))
+                    {
+                        log("正在重连...");
+                        Button_Click(null, null);
+                    }
+                    return;
+                }
+
+                // 电量                
+                mqttHA.Publish(dictBattery["state"], (Battery.ChargeLevel * 100).ToString());
                 Dictionary<string, string> dictBatteryAttributes = new Dictionary<string, string>();
-                dictBatteryAttributes.Add("BatteryState", batteryState[(int)Xamarin.Essentials.Battery.State]);
+                // 充电状态
+                string[] batteryState = new string[] { "Unknown", "Charging", "Discharging", "Full", "NotCharging", "NotPresent" };
+                dictBatteryAttributes.Add("battery_state", batteryState[(int)Battery.State]);
+                // 电源状态
+                string[] PowerSource = new string[] { "Unknown", "Battery", "AC", "Usb", "Wireless" };
+                dictBatteryAttributes.Add("power_source", PowerSource[(int)Battery.PowerSource]);
+                // 低功耗节能模式
+                string[] EnergySaverStatus = new string[] { "Unknown", "On", "Off" };
+                dictBatteryAttributes.Add("energy_saver_status", EnergySaverStatus[(int)Battery.EnergySaverStatus]);
                 mqttHA.PublishJson(dictBattery["attributes"], dictBatteryAttributes);
+                
                 // 音量
                 int systemVolume = audioManager.GetStreamVolume(Android.Media.Stream.Music);
                 mqttHA.Publish(dictVolume["state"], systemVolume.ToString());
@@ -280,7 +326,6 @@ namespace HA
                 {
                     txtLog.Text = "";
                 }
-
                 txtLog.Append($"\n[{System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}]\n{msg}\n");
                 txtLog.MovementMethod = ScrollingMovementMethod.Instance;
                 txtLog.SetSelection(txtLog.Text.Length, txtLog.Text.Length);
@@ -309,9 +354,12 @@ namespace HA
                 {
                     Button_Click(null, null);
                 }
-                else if (mqttHA != null && mqttHA.mqttClient.IsConnected && dictLightSensor != null)
+                else if (mqttHA != null && dictLightSensor != null)
                 {
-                    mqttHA.Publish(dictLightSensor["state"], LightSensor);
+                    if (mqttHA.mqttClient.IsConnected)
+                    {
+                        mqttHA.Publish(dictLightSensor["state"], LightSensor);
+                    }
                     this.PublishInfo();
                 }
                 this.AddNotification($"当前光照：{LightSensor}");
@@ -384,7 +432,6 @@ namespace HA
             });
         }
         #endregion
-
 
         private void PublishScreenshot()
         {
