@@ -131,7 +131,10 @@ namespace HA
                 txtUser.Text = "admin";
                 txtPassword.Text = "public";
             }
-            
+
+            // BluetoothBLE ble = new BluetoothBLE(this);
+
+
         }
 
         private void Button_Click(object sender, System.EventArgs e)
@@ -147,7 +150,14 @@ namespace HA
             }
 
             log("开始连接MQTT服务。。。");
-            mqttHA = new MqttHA(ip, port, user, password, "我的平板");
+            mqttHA = new MqttHA(ip, port, user, password, new MqttDevice()
+            {
+                identifiers = Build.Model + Build.Id,
+                manufacturer = $"{Build.Brand} {Build.Model}",
+                model = MqttHA.GetIPAddress(),
+                name = "我的平板",
+                sw_version = AppInfo.VersionString
+            });
             if (!mqttHA.TcpClientCheck(ip, int.Parse(port)))
             {
                 mqttHA = null;

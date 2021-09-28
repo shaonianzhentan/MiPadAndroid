@@ -10,6 +10,16 @@ using Microsoft.International.Converters.PinYinConverter;
 using System.Net;
 using System.Net.Sockets;
 
+
+public class MqttDevice
+{
+    public string identifiers { get; set; }
+    public string manufacturer { get; set; }
+    public string model { get; set; }
+    public string name { get; set; }
+    public string sw_version { get; set; }
+}
+
 public class MqttHA
 {
     public string ip { get; set; }
@@ -18,14 +28,14 @@ public class MqttHA
     public string user { get; set; }
     public string password { get; set; }
 
-    string device { get; set; }
+    MqttDevice device { get; set; }
 
     public IMqttClient mqttClient = null;
 
     // 订阅列表
     Dictionary<string, List<Action<string>>> subscribeList = new Dictionary<string, List<Action<string>>>();
 
-    public MqttHA(string host, string port, string user, string password, string device)
+    public MqttHA(string host, string port, string user, string password, MqttDevice device)
     {
         this.host = host;
         this.port = int.Parse(port);
@@ -60,10 +70,9 @@ public class MqttHA
 
     public Dictionary<string, string> GetTopic(string name, string type)
     {
-        string model = PinYin(this.device);
         Dictionary<string, string> dict = new Dictionary<string, string>();
         string pinyin = this.PinYin(name);
-        string topic = $"{model}/{this.ip.Replace(".", "_")}/{type}_{pinyin}/";
+        string topic = $"{this.ip.Replace(".", "_")}/{type}_{pinyin}/";
         dict["state"] = $"{topic}state";
         dict["attributes"] = $"{topic}attributes";
         dict["command"] = $"{topic}command";
@@ -122,19 +131,11 @@ public class MqttHA
     // 配置
     public void Config(string component, string object_id, Dictionary<string, object> dict)
     {
-        string model = PinYin(this.device);
-        string unique_id = $"{model}-{object_id}";
+        string unique_id = $"{PinYin(this.device.name)}-{object_id}";
         // 实体唯一ID
         dict.Add("unique_id", unique_id);
         // 设备信息
-        dict.Add("device", new
-        {
-            identifiers = $"635147515-{model}",
-            manufacturer = "shaonianzhentan",
-            model,
-            name = this.device,
-            sw_version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString()
-        });
+        dict.Add("device", this.device);
         string payload = JsonConvert.SerializeObject(dict);
         this.Publish($"homeassistant/{component}/{unique_id}/config", payload);
     }
@@ -252,6 +253,16 @@ public class MqttHA
     }
 
     public string GetIP()
+    {
+        string ip = System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces()
+            .Select(p => p.GetIPProperties())
+            .SelectMany(p => p.UnicastAddresses)
+            .Where(p => p.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork && !System.Net.IPAddress.IsLoopback(p.Address))
+            .FirstOrDefault()?.Address.ToString();
+        return ip;
+    }
+
+    public static string GetIPAddress()
     {
         string ip = System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces()
             .Select(p => p.GetIPProperties())
